@@ -147,4 +147,8 @@ public class ServeurUAM {
         ServeurUAM serveur = new ServeurUAM();
         serveur.demarrer();
     }
+
+    public List<GestionnaireClient> getClientsConnectes() {
+        return clientsConnectes;
+    }
 }

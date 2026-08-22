@@ -4,6 +4,8 @@ import sn.uam.uamconnect.common.*;
 import sn.uam.uamconnect.server.dao.MessageDAO;
 import sn.uam.uamconnect.server.service.AuthService;
 import sn.uam.uamconnect.server.dao.SalonDAO;
+import sn.uam.uamconnect.server.dao.AnnonceDAO;
+import sn.uam.uamconnect.common.Annonce;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -28,6 +30,7 @@ public class GestionnaireClient extends Thread {
     private final AuthService authService;
     private final MessageDAO messageDAO;
     private final SalonDAO salonDAO;
+    private final AnnonceDAO annonceDAO;
 
     public GestionnaireClient(Socket socket, ServeurUAM serveur) {
         this.socket = socket;
@@ -35,6 +38,7 @@ public class GestionnaireClient extends Thread {
         this.authService = new AuthService();
         this.messageDAO = new MessageDAO();
         this.salonDAO = new SalonDAO();
+        this.annonceDAO = new AnnonceDAO();
     }
 
     @Override
@@ -75,6 +79,9 @@ public class GestionnaireClient extends Thread {
             case LISTE_SALONS_DEMANDE -> envoyer(new RequeteReseau(RequeteReseau.Type.LISTE_SALONS,
                     salonDAO.trouverTous()));
             case LISTE_UTILISATEURS_DEMANDE -> serveur.envoyerListeUtilisateursA(this);
+            case ANNONCE_PUBLICATION -> traiterPublicationAnnonce(requete);
+            case LISTE_ANNONCES_DEMANDE -> envoyer(new RequeteReseau(RequeteReseau.Type.LISTE_ANNONCES_REPONSE,
+                    annonceDAO.trouverToutes()));
 
             default -> System.out.println("[SERVEUR] Type de requête non géré : " + requete.getType());
         }
@@ -183,5 +190,32 @@ public class GestionnaireClient extends Thread {
         Integer salonId = (Integer) requete.getPayload();
         var messages = messageDAO.trouverParSalon(salonId, 100); // 100 derniers messages
         envoyer(new RequeteReseau(RequeteReseau.Type.HISTORIQUE_SALON_REPONSE, messages));
+    }
+
+    /**
+     * Traite la publication d'une annonce. Vérifie le rôle (sécurité serveur, jamais côté client seul)
+     * puis diffuse la nouvelle annonce à tous les clients connectés.
+     */
+    private void traiterPublicationAnnonce(RequeteReseau requete) {
+        // Sécurité : seuls Enseignant et Administrateur peuvent publier (exigence section 4.6)
+        if (utilisateurConnecte.getRole() == User.Role.ETUDIANT) {
+            System.out.println("[SERVEUR] Tentative de publication refusée (étudiant) : " + utilisateurConnecte.getUsername());
+            return;
+        }
+
+        Annonce annonce = (Annonce) requete.getPayload();
+        annonce.setAuteurId(utilisateurConnecte.getId());
+
+        int idGenere = annonceDAO.creer(annonce);
+        annonce.setId(idGenere);
+        annonce.setAuteurUsername(utilisateurConnecte.getUsername());
+
+        // Diffusion à tous les clients connectés
+        RequeteReseau diffusion = new RequeteReseau(RequeteReseau.Type.ANNONCE_NOUVELLE, annonce);
+        for (GestionnaireClient client : serveur.getClientsConnectes()) {
+            client.envoyer(diffusion);
+        }
+
+        serveur.diffuserNotification("Nouvelle annonce disponible : " + annonce.getTitre());
     }
 }

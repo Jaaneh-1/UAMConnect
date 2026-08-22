@@ -8,6 +8,9 @@
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
+<?import javafx.scene.control.Tab?>
+<?import javafx.scene.control.TabPane?>
+<?import javafx.scene.control.TextArea?>
 
 <BorderPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="sn.uam.uamconnect.client.controller.ChatController"
@@ -47,19 +50,44 @@
     </left>
 
     <!-- ===== Centre : messages + saisie ===== -->
+    <!-- ===== Centre : onglets Messagerie / Annonces ===== -->
     <center>
-        <VBox styleClass="zone-chat">
-            <ListView fx:id="listeMessages" styleClass="liste-messages" VBox.vgrow="ALWAYS"/>
+        <TabPane fx:id="ongletsPrincipaux" tabClosingPolicy="UNAVAILABLE" styleClass="onglets-principaux">
 
-            <HBox alignment="CENTER" spacing="10.0" styleClass="barre-saisie">
-                <padding>
-                    <Insets bottom="16.0" left="16.0" right="16.0" top="12.0"/>
-                </padding>
-                <TextField fx:id="champMessage" onAction="#envoyerMessage" promptText="Écrivez un message..."
-                           styleClass="champ-message" HBox.hgrow="ALWAYS"/>
-                <Button fx:id="boutonEnvoyer" onAction="#envoyerMessage" styleClass="bouton-principal" text="Envoyer"/>
-            </HBox>
-        </VBox>
+            <Tab text="💬 Messagerie">
+                <VBox styleClass="zone-chat">
+                    <ListView fx:id="listeMessages" styleClass="liste-messages" VBox.vgrow="ALWAYS"/>
+
+                    <HBox alignment="CENTER" spacing="10.0" styleClass="barre-saisie">
+                        <padding>
+                            <Insets bottom="16.0" left="16.0" right="16.0" top="12.0"/>
+                        </padding>
+                        <TextField fx:id="champMessage" onAction="#envoyerMessage" promptText="Écrivez un message..."
+                                   styleClass="champ-message" HBox.hgrow="ALWAYS"/>
+                        <Button fx:id="boutonEnvoyer" onAction="#envoyerMessage" styleClass="bouton-principal" text="Envoyer"/>
+                    </HBox>
+                </VBox>
+            </Tab>
+
+            <Tab text="📢 Annonces">
+                <VBox spacing="0" styleClass="zone-annonces">
+
+                    <!-- Formulaire de publication : visible seulement pour Enseignant/Admin -->
+                    <VBox fx:id="formulaireAnnonce" spacing="10.0" styleClass="formulaire-annonce" managed="false" visible="false">
+                        <padding>
+                            <Insets bottom="16.0" left="20.0" right="20.0" top="16.0"/>
+                        </padding>
+                        <Label styleClass="titre-section" text="Publier une nouvelle annonce"/>
+                        <TextField fx:id="champTitreAnnonce" promptText="Titre de l'annonce" styleClass="champ-saisie"/>
+                        <TextArea fx:id="champContenuAnnonce" promptText="Contenu de l'annonce..." styleClass="champ-saisie" prefRowCount="3" wrapText="true"/>
+                        <Button fx:id="boutonPublierAnnonce" onAction="#publierAnnonce" styleClass="bouton-principal" text="Publier l'annonce"/>
+                    </VBox>
+
+                    <ListView fx:id="listeAnnonces" styleClass="liste-annonces" VBox.vgrow="ALWAYS"/>
+                </VBox>
+            </Tab>
+
+        </TabPane>
     </center>
 
 </BorderPane>

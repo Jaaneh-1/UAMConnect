@@ -197,3 +197,71 @@
 .champ-message:focused {
     -fx-border-color: #2c5282;
 }
+
+/* ===== Onglets ===== */
+
+.onglets-principaux .tab-header-area {
+    -fx-background-color: white;
+    -fx-padding: 4px 0 0 0;
+}
+
+.onglets-principaux .tab {
+    -fx-background-color: transparent;
+    -fx-padding: 10px 20px;
+}
+
+.onglets-principaux .tab:selected {
+    -fx-background-color: #f0f4f8;
+    -fx-border-color: #2c5282;
+    -fx-border-width: 0 0 3px 0;
+}
+
+.onglets-principaux .tab-label {
+    -fx-text-fill: #4a5568;
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+}
+
+/* ===== Annonces ===== */
+
+.zone-annonces {
+    -fx-background-color: #f0f4f8;
+}
+
+.formulaire-annonce {
+    -fx-background-color: white;
+    -fx-border-color: #e2e8f0;
+    -fx-border-width: 0 0 1px 0;
+}
+
+.liste-annonces {
+    -fx-background-color: transparent;
+}
+
+.liste-annonces .list-cell {
+    -fx-background-color: transparent;
+    -fx-padding: 6px 16px;
+}
+
+.carte-annonce {
+    -fx-background-color: white;
+    -fx-background-radius: 10px;
+    -fx-padding: 14px 18px;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 6, 0, 0, 2);
+}
+
+.titre-annonce {
+    -fx-text-fill: #1e3a5f;
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+}
+
+.meta-annonce {
+    -fx-text-fill: #a0aec0;
+    -fx-font-size: 11px;
+}
+
+.contenu-annonce {
+    -fx-text-fill: #4a5568;
+    -fx-font-size: 13px;
+}

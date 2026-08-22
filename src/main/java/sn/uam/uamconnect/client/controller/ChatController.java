@@ -8,6 +8,8 @@ import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
+import javafx.scene.control.TextArea;
+import sn.uam.uamconnect.common.Annonce;
 import sn.uam.uamconnect.client.network.ClientReseau;
 import sn.uam.uamconnect.common.Message;
 import sn.uam.uamconnect.common.RequeteReseau;
@@ -28,6 +30,11 @@ public class ChatController {
     @FXML private Button boutonEnvoyer;
     @FXML private Label labelSalonActif;
     @FXML private Label labelUtilisateurConnecte;
+    @FXML private VBox formulaireAnnonce;
+    @FXML private TextField champTitreAnnonce;
+    @FXML private TextArea champContenuAnnonce;
+    @FXML private Button boutonPublierAnnonce;
+    @FXML private ListView<Annonce> listeAnnonces;
 
     private ClientReseau clientReseau;
     private User utilisateurConnecte;
@@ -36,6 +43,7 @@ public class ChatController {
     private final ObservableList<Salon> donneesSalons = FXCollections.observableArrayList();
     private final ObservableList<User> donneesUtilisateurs = FXCollections.observableArrayList();
     private final ObservableList<Message> donneesMessages = FXCollections.observableArrayList();
+    private final ObservableList<Annonce> donneesAnnonces = FXCollections.observableArrayList();
 
     /**
      * Appelée manuellement depuis ConnexionController juste après le chargement du FXML,
@@ -57,6 +65,14 @@ public class ChatController {
                 null));
         clientReseau.envoyer(new RequeteReseau(RequeteReseau.Type.LISTE_UTILISATEURS_DEMANDE,
                 null));
+        // Le formulaire de publication n'est visible que pour Enseignant et Administrateur
+        boolean peutPublier = utilisateurConnecte.getRole() != User.Role.ETUDIANT;
+        formulaireAnnonce.setVisible(peutPublier);
+        formulaireAnnonce.setManaged(peutPublier);
+
+        configurerListeAnnonces();
+        clientReseau.envoyer(new RequeteReseau(RequeteReseau.Type.LISTE_ANNONCES_DEMANDE,
+                null));
     }
 
     @FXML
@@ -64,6 +80,7 @@ public class ChatController {
         listeSalons.setItems(donneesSalons);
         listeUtilisateurs.setItems(donneesUtilisateurs);
         listeMessages.setItems(donneesMessages);
+        listeAnnonces.setItems(donneesAnnonces);
     }
 
     /**
@@ -126,6 +143,40 @@ public class ChatController {
                 }
 
                 setGraphic(bulle);
+            }
+        });
+    }
+
+
+    /**
+     * Configure l'affichage des annonces sous forme de "cartes".
+     */
+    private void configurerListeAnnonces() {
+        listeAnnonces.setCellFactory(lv -> new ListCell<>() {
+            @Override
+            protected void updateItem(Annonce annonce, boolean vide) {
+                super.updateItem(annonce, vide);
+
+                if (vide || annonce == null) {
+                    setGraphic(null);
+                    return;
+                }
+
+                Label titre = new Label(annonce.getTitre());
+                titre.getStyleClass().add("titre-annonce");
+
+                Label meta = new Label("Par " + annonce.getAuteurUsername());
+                meta.getStyleClass().add("meta-annonce");
+
+                Label contenu = new Label(annonce.getContenu());
+                contenu.setWrapText(true);
+                contenu.getStyleClass().add("contenu-annonce");
+
+                VBox carte = new VBox(6, titre, meta, contenu);
+                carte.getStyleClass().add("carte-annonce");
+                VBox.setMargin(carte, new javafx.geometry.Insets(6, 12, 6, 12));
+
+                setGraphic(carte);
             }
         });
     }
@@ -203,6 +254,17 @@ public class ChatController {
                 // TODO étape notifications avancées : afficher une petite popup/toast
             }
 
+            case LISTE_ANNONCES_REPONSE -> {
+                @SuppressWarnings("unchecked")
+                List<Annonce> annonces = (List<Annonce>) requete.getPayload();
+                Platform.runLater(() -> donneesAnnonces.setAll(annonces));
+            }
+
+            case ANNONCE_NOUVELLE -> {
+                Annonce annonce = (Annonce) requete.getPayload();
+                Platform.runLater(() -> donneesAnnonces.add(0, annonce)); // ajoutée en haut de la liste
+            }
+
             default -> { /* ignoré ici */ }
         }
     }
@@ -215,5 +277,21 @@ public class ChatController {
         clientReseau.deconnecter();
         Stage stage = (Stage) champMessage.getScene().getWindow();
         stage.close();
+    }
+
+    @FXML
+    private void publierAnnonce() {
+        String titre = champTitreAnnonce.getText().trim();
+        String contenu = champContenuAnnonce.getText().trim();
+
+        if (titre.isEmpty() || contenu.isEmpty()) {
+            return;
+        }
+
+        Annonce annonce = new Annonce(titre, contenu, utilisateurConnecte.getId(), null);
+        clientReseau.envoyer(new RequeteReseau(RequeteReseau.Type.ANNONCE_PUBLICATION, annonce));
+
+        champTitreAnnonce.clear();
+        champContenuAnnonce.clear();
     }
 }

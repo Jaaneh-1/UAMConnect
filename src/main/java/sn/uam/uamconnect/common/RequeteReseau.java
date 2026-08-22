@@ -33,8 +33,10 @@ public class RequeteReseau implements Serializable {
         HISTORIQUE_SALON_REPONSE,// payload: List<Message>
 
         // --- Annonces ---
-        ANNONCE_PUBLICATION,    // payload: Annonce
+        ANNONCE_PUBLICATION,    // payload: Annonce (envoyé par le client qui publie)
         ANNONCE_NOUVELLE,       // payload: Annonce (diffusée aux autres clients)
+        LISTE_ANNONCES_DEMANDE, // payload: null
+        LISTE_ANNONCES_REPONSE, // payload: List<Annonce>
 
         // --- Fichiers ---
         FICHIER_ENVOI,          // payload: Fichier (métadonnées) — les octets suivent séparément
