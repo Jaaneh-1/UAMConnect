@@ -62,6 +62,7 @@
                         <padding>
                             <Insets bottom="16.0" left="16.0" right="16.0" top="12.0"/>
                         </padding>
+                        <Button fx:id="boutonJoindreFichier" onAction="#choisirFichier" styleClass="bouton-joindre" text="📎"/>
                         <TextField fx:id="champMessage" onAction="#envoyerMessage" promptText="Écrivez un message..."
                                    styleClass="champ-message" HBox.hgrow="ALWAYS"/>
                         <Button fx:id="boutonEnvoyer" onAction="#envoyerMessage" styleClass="bouton-principal" text="Envoyer"/>
@@ -84,6 +85,12 @@
                     </VBox>
 
                     <ListView fx:id="listeAnnonces" styleClass="liste-annonces" VBox.vgrow="ALWAYS"/>
+                </VBox>
+            </Tab>
+
+            <Tab text="📁 Fichiers">
+                <VBox styleClass="zone-annonces">
+                    <ListView fx:id="listeFichiers" styleClass="liste-fichiers" VBox.vgrow="ALWAYS"/>
                 </VBox>
             </Tab>
 

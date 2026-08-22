@@ -39,8 +39,10 @@ public class RequeteReseau implements Serializable {
         LISTE_ANNONCES_REPONSE, // payload: List<Annonce>
 
         // --- Fichiers ---
-        FICHIER_ENVOI,          // payload: Fichier (métadonnées) — les octets suivent séparément
-        FICHIER_RECEPTION,      // payload: Fichier
+        FICHIER_ENVOI,           // (non utilisé sur ce canal - transfert via port dédié)
+        FICHIER_RECEPTION,       // payload: Fichier (notification qu'un nouveau fichier est disponible)
+        FICHIER_LISTE_DEMANDE,   // payload: Integer (id du salon)
+        FICHIER_LISTE_REPONSE,   // payload: List<Fichier>
 
         // --- Notifications temps réel ---
         NOTIFICATION            // payload: String (ex: "Aminata vient de se connecter.")
