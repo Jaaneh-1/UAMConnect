@@ -55,7 +55,13 @@ public class RequeteReseau implements Serializable {
         UTILISATEUR_CREER,           // payload: User (avec mot de passe en clair dans le champ password)
         UTILISATEUR_MODIFIER,        // payload: User
         UTILISATEUR_SUPPRIMER,       // payload: Integer (id)
-        UTILISATEUR_OPERATION_REPONSE // payload: String (message de résultat, succès ou erreur)
+        UTILISATEUR_OPERATION_REPONSE, // payload: String (message de résultat, succès ou erreur)
+
+        // --- Suppression de contenu (bonus) ---
+        FICHIER_SUPPRIMER,  // payload: Integer (id du fichier) - demande du client
+        FICHIER_SUPPRIME,   // payload: Integer (id du fichier) - diffusion pour retrait de l'affichage
+        MESSAGE_SUPPRIMER,  // payload: Integer (id du message)
+        MESSAGE_SUPPRIME,   // payload: Integer (id du message)
     }
 
     private Type type;

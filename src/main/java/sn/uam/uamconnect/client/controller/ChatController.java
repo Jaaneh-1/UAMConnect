@@ -164,6 +164,7 @@ public class ChatController {
                 }
 
                 boolean estMoi = message.getExpediteurId() == utilisateurConnecte.getId();
+                boolean peutSupprimer = estMoi || utilisateurConnecte.getRole() == User.Role.ADMINISTRATEUR;
 
                 Label texteAuteur = new Label(message.getExpediteurUsername());
                 texteAuteur.getStyleClass().add("auteur-message");
@@ -172,7 +173,19 @@ public class ChatController {
                 texteMessage.setWrapText(true);
                 texteMessage.getStyleClass().add(estMoi ? "texte-message-moi" : "texte-message-autre");
 
-                VBox bulle = new VBox(2, texteAuteur, texteMessage);
+                VBox contenuBulle = new VBox(2, texteAuteur, texteMessage);
+                HBox bulleEtBouton = new HBox(6, contenuBulle);
+                bulleEtBouton.setAlignment(Pos.CENTER_LEFT);
+
+                if (peutSupprimer) {
+                    Button boutonSupprimerMsg = new Button("✕");
+                    boutonSupprimerMsg.getStyleClass().add("bouton-supprimer-mini");
+                    boutonSupprimerMsg.setOnAction(e ->
+                            clientReseau.envoyer(new RequeteReseau(RequeteReseau.Type.MESSAGE_SUPPRIMER, message.getId())));
+                    bulleEtBouton.getChildren().add(boutonSupprimerMsg);
+                }
+
+                VBox bulle = new VBox(bulleEtBouton);
                 bulle.getStyleClass().add(estMoi ? "bulle-message-moi" : "bulle-message-autre");
 
                 if (estMoi) {
@@ -391,6 +404,16 @@ public class ChatController {
                 });
             }
 
+            case FICHIER_SUPPRIME -> {
+                int idSupprime = (Integer) requete.getPayload();
+                Platform.runLater(() -> donneesFichiers.removeIf(f -> f.getId() == idSupprime));
+            }
+
+            case MESSAGE_SUPPRIME -> {
+                int idSupprime = (Integer) requete.getPayload();
+                Platform.runLater(() -> donneesMessages.removeIf(m -> m.getId() == idSupprime));
+            }
+
             default -> { /* ignoré ici */ }
         }
     }
@@ -447,6 +470,17 @@ public class ChatController {
                 HBox ligne = new HBox(16, infosTexte, boutonTelecharger);
                 ligne.setAlignment(Pos.CENTER_LEFT);
                 HBox.setHgrow(infosTexte, javafx.scene.layout.Priority.ALWAYS);
+
+                boolean peutSupprimer = fichier.getExpediteurId() == utilisateurConnecte.getId()
+                        || utilisateurConnecte.getRole() == User.Role.ADMINISTRATEUR;
+
+                if (peutSupprimer) {
+                    Button boutonSupprimerFichier = new Button("Supprimer");
+                    boutonSupprimerFichier.getStyleClass().add("bouton-supprimer");
+                    boutonSupprimerFichier.setOnAction(e ->
+                            clientReseau.envoyer(new RequeteReseau(RequeteReseau.Type.FICHIER_SUPPRIMER, fichier.getId())));
+                    ligne.getChildren().add(boutonSupprimerFichier);
+                }
 
                 VBox carte = new VBox(ligne);
                 carte.getStyleClass().add("carte-fichier");

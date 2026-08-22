@@ -365,3 +365,15 @@
 .bouton-secondaire-clair:hover {
     -fx-background-color: #e2e8f0;
 }
+
+.bouton-supprimer-mini {
+    -fx-background-color: transparent;
+    -fx-text-fill: #a0aec0;
+    -fx-font-size: 11px;
+    -fx-padding: 2px 6px;
+    -fx-cursor: hand;
+}
+
+.bouton-supprimer-mini:hover {
+    -fx-text-fill: #e53e3e;
+}

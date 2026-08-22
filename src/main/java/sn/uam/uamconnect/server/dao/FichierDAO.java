@@ -172,4 +172,18 @@ public class FichierDAO {
 
         return Optional.empty();
     }
+
+    public boolean supprimer(int id) {
+        String sql = "DELETE FROM fichiers WHERE id = ?";
+
+        try (Connection conn = ConnexionMySQL.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, id);
+            return ps.executeUpdate() > 0;
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Erreur lors de la suppression du fichier id=" + id, e);
+        }
+    }
 }
