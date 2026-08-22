@@ -140,11 +140,14 @@ public class ServeurUAM {
         }
     }
 
-    /**
-     * Point d'entrée : lance le serveur.
-     */
     public static void main(String[] args) {
         ServeurUAM serveur = new ServeurUAM();
+
+        // Le canal de fichiers tourne dans un thread séparé, en parallèle du chat
+        ServeurFichiers serveurFichiers = new ServeurFichiers(serveur);
+        new Thread(serveurFichiers::demarrer).start();
+
+        // Le canal principal (chat) démarre sur le thread principal
         serveur.demarrer();
     }
 

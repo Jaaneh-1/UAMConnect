@@ -5,6 +5,7 @@ import sn.uam.uamconnect.common.Fichier;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * DAO responsable des opérations SQL sur la table "fichiers".
@@ -144,5 +145,31 @@ public class FichierDAO {
         }
 
         return fichier;
+    }
+
+    public Optional<Fichier> trouverParId(int id) {
+        String sql = """
+            SELECT f.*, u.username AS expediteur_username
+            FROM fichiers f
+            JOIN users u ON f.expediteur_id = u.id
+            WHERE f.id = ?
+            """;
+
+        try (Connection conn = ConnexionMySQL.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, id);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return Optional.of(mapperResultSetVersFichier(rs));
+                }
+            }
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Erreur lors de la recherche du fichier id=" + id, e);
+        }
+
+        return Optional.empty();
     }
 }

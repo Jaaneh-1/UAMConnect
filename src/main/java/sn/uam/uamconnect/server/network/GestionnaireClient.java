@@ -82,6 +82,11 @@ public class GestionnaireClient extends Thread {
             case ANNONCE_PUBLICATION -> traiterPublicationAnnonce(requete);
             case LISTE_ANNONCES_DEMANDE -> envoyer(new RequeteReseau(RequeteReseau.Type.LISTE_ANNONCES_REPONSE,
                     annonceDAO.trouverToutes()));
+            case FICHIER_LISTE_DEMANDE -> {
+                Integer salonId = (Integer) requete.getPayload();
+                envoyer(new RequeteReseau(RequeteReseau.Type.FICHIER_LISTE_REPONSE,
+                        new sn.uam.uamconnect.server.dao.FichierDAO().trouverParSalon(salonId)));
+            }
 
             default -> System.out.println("[SERVEUR] Type de requête non géré : " + requete.getType());
         }

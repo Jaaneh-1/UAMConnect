@@ -6,9 +6,13 @@ import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.scene.control.TextArea;
+import javafx.stage.FileChooser;
+import sn.uam.uamconnect.client.network.ClientTransfertFichier;
+import sn.uam.uamconnect.common.Fichier;
 import sn.uam.uamconnect.common.Annonce;
 import sn.uam.uamconnect.client.network.ClientReseau;
 import sn.uam.uamconnect.common.Message;
@@ -17,6 +21,7 @@ import sn.uam.uamconnect.common.Salon;
 import sn.uam.uamconnect.common.User;
 
 import java.util.List;
+import java.nio.file.Path;
 
 /**
  * Contrôleur de l'écran principal : salons, utilisateurs connectés, messagerie temps réel.
@@ -35,6 +40,8 @@ public class ChatController {
     @FXML private TextArea champContenuAnnonce;
     @FXML private Button boutonPublierAnnonce;
     @FXML private ListView<Annonce> listeAnnonces;
+    @FXML private Button boutonJoindreFichier;
+    @FXML private ListView<Fichier> listeFichiers;
 
     private ClientReseau clientReseau;
     private User utilisateurConnecte;
@@ -44,6 +51,8 @@ public class ChatController {
     private final ObservableList<User> donneesUtilisateurs = FXCollections.observableArrayList();
     private final ObservableList<Message> donneesMessages = FXCollections.observableArrayList();
     private final ObservableList<Annonce> donneesAnnonces = FXCollections.observableArrayList();
+    private final ObservableList<Fichier> donneesFichiers = FXCollections.observableArrayList();
+    private final ClientTransfertFichier clientTransfertFichier = new ClientTransfertFichier();
 
     /**
      * Appelée manuellement depuis ConnexionController juste après le chargement du FXML,
@@ -58,6 +67,7 @@ public class ChatController {
         );
 
         configurerListes();
+        configurerListeFichiers();
 
         // À partir de maintenant, c'est ce contrôleur qui traite tous les messages entrants
         clientReseau.setEcouteurMessages(this::traiterMessageServeur);
@@ -81,6 +91,7 @@ public class ChatController {
         listeUtilisateurs.setItems(donneesUtilisateurs);
         listeMessages.setItems(donneesMessages);
         listeAnnonces.setItems(donneesAnnonces);
+        listeFichiers.setItems(donneesFichiers);
     }
 
     /**
@@ -190,6 +201,8 @@ public class ChatController {
         donneesMessages.clear();
 
         clientReseau.envoyer(new RequeteReseau(RequeteReseau.Type.HISTORIQUE_SALON_DEMANDE, salon.getId()));
+        donneesFichiers.clear();
+        clientReseau.envoyer(new RequeteReseau(RequeteReseau.Type.FICHIER_LISTE_DEMANDE, salon.getId()));
     }
 
     /**
@@ -265,6 +278,22 @@ public class ChatController {
                 Platform.runLater(() -> donneesAnnonces.add(0, annonce)); // ajoutée en haut de la liste
             }
 
+            case FICHIER_LISTE_REPONSE -> {
+                @SuppressWarnings("unchecked")
+                List<Fichier> fichiers = (List<Fichier>) requete.getPayload();
+                Platform.runLater(() -> donneesFichiers.setAll(fichiers));
+            }
+
+            case FICHIER_RECEPTION -> {
+                Fichier fichier = (Fichier) requete.getPayload();
+                Platform.runLater(() -> {
+                    if (salonActif != null && fichier.getSalonId() != null
+                            && fichier.getSalonId().equals(salonActif.getId())) {
+                        donneesFichiers.add(0, fichier);
+                    }
+                });
+            }
+
             default -> { /* ignoré ici */ }
         }
     }
@@ -293,5 +322,103 @@ public class ChatController {
 
         champTitreAnnonce.clear();
         champContenuAnnonce.clear();
+    }
+
+    private void configurerListeFichiers() {
+        listeFichiers.setCellFactory(lv -> new ListCell<>() {
+            @Override
+            protected void updateItem(Fichier fichier, boolean vide) {
+                super.updateItem(fichier, vide);
+
+                if (vide || fichier == null) {
+                    setGraphic(null);
+                    return;
+                }
+
+                Label nom = new Label("📄 " + fichier.getNomFichier());
+                nom.getStyleClass().add("nom-fichier");
+
+                String tailleLisible = formatTaille(fichier.getTailleOctets());
+                Label meta = new Label("Envoyé par " + fichier.getExpediteurUsername() + " • " + tailleLisible);
+                meta.getStyleClass().add("meta-fichier");
+
+                Button boutonTelecharger = new Button("Télécharger");
+                boutonTelecharger.getStyleClass().add("bouton-telecharger");
+                boutonTelecharger.setOnAction(e -> telechargerFichier(fichier));
+
+                VBox infosTexte = new VBox(4, nom, meta);
+                HBox ligne = new HBox(16, infosTexte, boutonTelecharger);
+                ligne.setAlignment(Pos.CENTER_LEFT);
+                HBox.setHgrow(infosTexte, javafx.scene.layout.Priority.ALWAYS);
+
+                VBox carte = new VBox(ligne);
+                carte.getStyleClass().add("carte-fichier");
+                VBox.setMargin(carte, new javafx.geometry.Insets(6, 12, 6, 12));
+
+                setGraphic(carte);
+            }
+        });
+    }
+
+    private String formatTaille(long octets) {
+        if (octets < 1024) return octets + " o";
+        if (octets < 1024 * 1024) return String.format("%.1f Ko", octets / 1024.0);
+        return String.format("%.1f Mo", octets / (1024.0 * 1024));
+    }
+
+    @FXML
+    private void choisirFichier() {
+        if (salonActif == null) {
+            return; // pas de salon sélectionné, on ne peut pas envoyer
+        }
+
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Choisir un fichier à partager");
+        fileChooser.getExtensionFilters().addAll(
+                new FileChooser.ExtensionFilter("Fichiers supportés", "*.pdf", "*.png", "*.jpg", "*.jpeg", "*.zip"),
+                new FileChooser.ExtensionFilter("Tous les fichiers", "*.*")
+        );
+
+        java.io.File fichierChoisi = fileChooser.showOpenDialog(champMessage.getScene().getWindow());
+
+        if (fichierChoisi == null) {
+            return; // utilisateur a annulé
+        }
+
+        // L'envoi réseau se fait dans un thread séparé pour ne jamais bloquer l'interface
+        new Thread(() -> {
+            try {
+                clientTransfertFichier.envoyerFichier(
+                        fichierChoisi.toPath(),
+                        utilisateurConnecte.getId(),
+                        -1, // pas de destinataire privé
+                        salonActif.getId()
+                );
+            } catch (java.io.IOException e) {
+                System.err.println("Erreur lors de l'envoi du fichier : " + e.getMessage());
+            }
+        }).start();
+    }
+
+    private void telechargerFichier(Fichier fichier) {
+        javafx.stage.DirectoryChooser dossierChooser = new javafx.stage.DirectoryChooser();
+        dossierChooser.setTitle("Choisir où enregistrer le fichier");
+
+        java.io.File dossierChoisi = dossierChooser.showDialog(champMessage.getScene().getWindow());
+
+        if (dossierChoisi == null) {
+            return;
+        }
+
+        Path destination = Path.of(dossierChoisi.getAbsolutePath(), fichier.getNomFichier());
+
+        new Thread(() -> {
+            try {
+                clientTransfertFichier.telechargerFichier(fichier.getId(), destination);
+                System.out.println("✅ Fichier téléchargé : " + destination);
+            } catch (java.io.IOException e) {
+                System.err.println("Erreur lors du téléchargement : " + e.getMessage());
+            }
+        }).start();
     }
 }
