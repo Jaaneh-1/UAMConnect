@@ -101,6 +101,19 @@ public class ServeurUAM {
     }
 
     /**
+     * Envoie la liste des utilisateurs connectés à UN client précis (celui qui la demande),
+     * plutôt qu'à tout le monde (évite d'attendre le prochain événement connexion/déconnexion).
+     */
+    public void envoyerListeUtilisateursA(GestionnaireClient demandeur) {
+        List<User> utilisateursConnectes = clientsConnectes.stream()
+                .map(GestionnaireClient::getUtilisateurConnecte)
+                .filter(u -> u != null)
+                .collect(Collectors.toList());
+
+        demandeur.envoyer(new RequeteReseau(RequeteReseau.Type.LISTE_UTILISATEURS, utilisateursConnectes));
+    }
+
+    /**
      * Diffuse un message de salon à tous les clients connectés (chacun filtrera
      * côté client s'il est dans ce salon, ou on peut filtrer ici selon les salons "actifs" par client).
      * Pour rester simple et fiable : on diffuse à tous, le client affiche selon le salon actuellement ouvert.

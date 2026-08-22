@@ -24,9 +24,13 @@ public class RequeteReseau implements Serializable {
 
         // --- Utilisateurs connectés ---
         LISTE_UTILISATEURS,     // payload: List<User>
+        LISTE_UTILISATEURS_DEMANDE, // payload: null — demande explicite du client
 
         // --- Salons ---
-        LISTE_SALONS,           // payload: List<Salon>
+        LISTE_SALONS,
+        LISTE_SALONS_DEMANDE,    // payload: null — demande explicite du client// payload: List<Salon>
+        HISTORIQUE_SALON_DEMANDE,// payload: Integer (id du salon)
+        HISTORIQUE_SALON_REPONSE,// payload: List<Message>
 
         // --- Annonces ---
         ANNONCE_PUBLICATION,    // payload: Annonce

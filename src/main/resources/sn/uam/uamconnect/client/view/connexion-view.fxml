@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.PasswordField?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+
+<VBox alignment="CENTER" spacing="18.0" styleClass="conteneur-connexion"
+      xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="sn.uam.uamconnect.client.controller.ConnexionController">
+
+    <padding>
+        <Insets bottom="40.0" left="50.0" right="50.0" top="40.0"/>
+    </padding>
+
+    <Label styleClass="titre-app" text="UAM Connect">
+        <font>
+            <Font size="32.0"/>
+        </font>
+    </Label>
+
+    <Label styleClass="sous-titre" text="Plateforme collaborative universitaire"/>
+
+    <VBox spacing="12.0" styleClass="carte-connexion">
+        <padding>
+            <Insets bottom="30.0" left="30.0" right="30.0" top="30.0"/>
+        </padding>
+
+        <Label styleClass="label-champ" text="Nom d'utilisateur"/>
+        <TextField fx:id="champUsername" promptText="Entrez votre identifiant" styleClass="champ-saisie"/>
+
+        <Label styleClass="label-champ" text="Mot de passe"/>
+        <PasswordField fx:id="champMotDePasse" promptText="Entrez votre mot de passe" styleClass="champ-saisie"/>
+
+        <Label fx:id="labelErreur" styleClass="label-erreur" visible="false" wrapText="true"/>
+
+        <Button fx:id="boutonConnexion" maxWidth="Infinity" mnemonicParsing="false"
+                onAction="#seConnecter" styleClass="bouton-principal" text="Se connecter"/>
+    </VBox>
+
+    <Label styleClass="label-footer" text="UFR STA — Licence 3 Informatique — UAM 2026"/>
+
+</VBox>

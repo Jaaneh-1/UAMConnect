@@ -3,6 +3,7 @@ package sn.uam.uamconnect.server.network;
 import sn.uam.uamconnect.common.*;
 import sn.uam.uamconnect.server.dao.MessageDAO;
 import sn.uam.uamconnect.server.service.AuthService;
+import sn.uam.uamconnect.server.dao.SalonDAO;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -26,12 +27,14 @@ public class GestionnaireClient extends Thread {
 
     private final AuthService authService;
     private final MessageDAO messageDAO;
+    private final SalonDAO salonDAO;
 
     public GestionnaireClient(Socket socket, ServeurUAM serveur) {
         this.socket = socket;
         this.serveur = serveur;
         this.authService = new AuthService();
         this.messageDAO = new MessageDAO();
+        this.salonDAO = new SalonDAO();
     }
 
     @Override
@@ -68,6 +71,10 @@ public class GestionnaireClient extends Thread {
             case CONNEXION_DEMANDE -> traiterConnexion(requete);
             case DECONNEXION -> deconnecterProprement();
             case MESSAGE_ENVOI -> traiterEnvoiMessage(requete);
+            case HISTORIQUE_SALON_DEMANDE -> traiterDemandeHistorique(requete);
+            case LISTE_SALONS_DEMANDE -> envoyer(new RequeteReseau(RequeteReseau.Type.LISTE_SALONS,
+                    salonDAO.trouverTous()));
+            case LISTE_UTILISATEURS_DEMANDE -> serveur.envoyerListeUtilisateursA(this);
 
             default -> System.out.println("[SERVEUR] Type de requête non géré : " + requete.getType());
         }
@@ -166,5 +173,15 @@ public class GestionnaireClient extends Thread {
 
     public User getUtilisateurConnecte() {
         return utilisateurConnecte;
+    }
+
+    /**
+     * Envoie l'historique des messages d'un salon au client qui le demande
+     * (section 4.8 : historique des conversations).
+     */
+    private void traiterDemandeHistorique(RequeteReseau requete) {
+        Integer salonId = (Integer) requete.getPayload();
+        var messages = messageDAO.trouverParSalon(salonId, 100); // 100 derniers messages
+        envoyer(new RequeteReseau(RequeteReseau.Type.HISTORIQUE_SALON_REPONSE, messages));
     }
 }

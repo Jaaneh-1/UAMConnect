@@ -1,0 +1,199 @@
+.root {
+    -fx-background-color: linear-gradient(to bottom right, #1e3a5f, #2c5282);
+}
+
+.titre-app {
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+}
+
+.sous-titre {
+    -fx-text-fill: #cbd5e0;
+    -fx-font-size: 14px;
+}
+
+.carte-connexion {
+    -fx-background-color: white;
+    -fx-background-radius: 16px;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.25), 20, 0, 0, 8);
+    -fx-max-width: 360px;
+}
+
+.label-champ {
+    -fx-text-fill: #4a5568;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+}
+
+.champ-saisie {
+    -fx-background-color: #f7fafc;
+    -fx-background-radius: 8px;
+    -fx-border-color: #e2e8f0;
+    -fx-border-radius: 8px;
+    -fx-padding: 10px 12px;
+    -fx-font-size: 14px;
+}
+
+.champ-saisie:focused {
+    -fx-border-color: #2c5282;
+    -fx-background-color: white;
+}
+
+.bouton-principal {
+    -fx-background-color: #2c5282;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-font-size: 14px;
+    -fx-background-radius: 8px;
+    -fx-padding: 12px;
+    -fx-cursor: hand;
+}
+
+.bouton-principal:hover {
+    -fx-background-color: #1e3a5f;
+}
+
+.label-erreur {
+    -fx-text-fill: #e53e3e;
+    -fx-font-size: 12px;
+}
+
+.label-footer {
+    -fx-text-fill: #cbd5e0;
+    -fx-font-size: 11px;
+}
+
+/* ===== Écran de chat ===== */
+
+.fond-app {
+    -fx-background-color: #f0f4f8;
+}
+
+.barre-haut {
+    -fx-background-color: #1e3a5f;
+}
+
+.titre-app-petit {
+    -fx-text-fill: white;
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+}
+
+.label-salon-actif {
+    -fx-text-fill: #a0c4ff;
+    -fx-font-size: 13px;
+    -fx-padding: 0 0 0 16px;
+}
+
+.label-utilisateur {
+    -fx-text-fill: #cbd5e0;
+    -fx-font-size: 13px;
+}
+
+.bouton-secondaire {
+    -fx-background-color: transparent;
+    -fx-text-fill: white;
+    -fx-border-color: #4a6fa5;
+    -fx-border-radius: 6px;
+    -fx-background-radius: 6px;
+    -fx-cursor: hand;
+    -fx-padding: 6px 14px;
+}
+
+.bouton-secondaire:hover {
+    -fx-background-color: #2c5282;
+}
+
+.colonne-laterale {
+    -fx-background-color: white;
+    -fx-border-color: #e2e8f0;
+    -fx-border-width: 0 1px 0 0;
+}
+
+.titre-section {
+    -fx-text-fill: #718096;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+}
+
+.liste-salons, .liste-utilisateurs {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+}
+
+.liste-salons .list-cell, .liste-utilisateurs .list-cell {
+    -fx-padding: 8px 16px;
+    -fx-font-size: 13px;
+    -fx-background-color: transparent;
+}
+
+.liste-salons .list-cell:hover, .liste-utilisateurs .list-cell:hover {
+    -fx-background-color: #edf2f7;
+}
+
+.liste-salons .list-cell:selected {
+    -fx-background-color: #2c5282;
+    -fx-text-fill: white;
+}
+
+.zone-chat {
+    -fx-background-color: #f0f4f8;
+}
+
+.liste-messages {
+    -fx-background-color: transparent;
+}
+
+.liste-messages .list-cell {
+    -fx-background-color: transparent;
+    -fx-padding: 4px 16px;
+}
+
+.bulle-message-autre {
+    -fx-background-color: white;
+    -fx-background-radius: 12px;
+    -fx-padding: 10px 14px;
+    -fx-max-width: 400px;
+}
+
+.bulle-message-moi {
+    -fx-background-color: #2c5282;
+    -fx-background-radius: 12px;
+    -fx-padding: 10px 14px;
+    -fx-max-width: 400px;
+}
+
+.texte-message-autre {
+    -fx-text-fill: #2d3748;
+    -fx-font-size: 13px;
+}
+
+.texte-message-moi {
+    -fx-text-fill: white;
+    -fx-font-size: 13px;
+}
+
+.auteur-message {
+    -fx-text-fill: #718096;
+    -fx-font-size: 10px;
+    -fx-font-weight: bold;
+}
+
+.barre-saisie {
+    -fx-background-color: white;
+    -fx-border-color: #e2e8f0;
+    -fx-border-width: 1px 0 0 0;
+}
+
+.champ-message {
+    -fx-background-color: #f7fafc;
+    -fx-background-radius: 20px;
+    -fx-border-color: #e2e8f0;
+    -fx-border-radius: 20px;
+    -fx-padding: 10px 16px;
+    -fx-font-size: 13px;
+}
+
+.champ-message:focused {
+    -fx-border-color: #2c5282;
+}

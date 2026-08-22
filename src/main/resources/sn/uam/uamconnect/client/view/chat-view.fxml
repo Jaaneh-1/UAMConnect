@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ListView?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<BorderPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="sn.uam.uamconnect.client.controller.ChatController"
+            styleClass="fond-app">
+
+    <!-- ===== Barre du haut ===== -->
+    <top>
+        <HBox alignment="CENTER_LEFT" spacing="12.0" styleClass="barre-haut">
+            <padding>
+                <Insets bottom="14.0" left="24.0" right="24.0" top="14.0"/>
+            </padding>
+            <Label styleClass="titre-app-petit" text="UAM Connect"/>
+            <Label fx:id="labelSalonActif" styleClass="label-salon-actif" text="Sélectionnez un salon"/>
+            <HBox HBox.hgrow="ALWAYS"/>
+            <Label fx:id="labelUtilisateurConnecte" styleClass="label-utilisateur"/>
+            <Button fx:id="boutonDeconnexion" onAction="#seDeconnecter" styleClass="bouton-secondaire" text="Déconnexion"/>
+        </HBox>
+    </top>
+
+    <!-- ===== Colonne gauche : salons + utilisateurs ===== -->
+    <left>
+        <VBox prefWidth="260.0" styleClass="colonne-laterale">
+            <Label styleClass="titre-section" text="Salons">
+                <padding>
+                    <Insets bottom="6.0" left="16.0" right="16.0" top="16.0"/>
+                </padding>
+            </Label>
+            <ListView fx:id="listeSalons" styleClass="liste-salons" VBox.vgrow="ALWAYS"/>
+
+            <Label styleClass="titre-section" text="Utilisateurs connectés">
+                <padding>
+                    <Insets bottom="6.0" left="16.0" right="16.0" top="16.0"/>
+                </padding>
+            </Label>
+            <ListView fx:id="listeUtilisateurs" styleClass="liste-utilisateurs" VBox.vgrow="ALWAYS"/>
+        </VBox>
+    </left>
+
+    <!-- ===== Centre : messages + saisie ===== -->
+    <center>
+        <VBox styleClass="zone-chat">
+            <ListView fx:id="listeMessages" styleClass="liste-messages" VBox.vgrow="ALWAYS"/>
+
+            <HBox alignment="CENTER" spacing="10.0" styleClass="barre-saisie">
+                <padding>
+                    <Insets bottom="16.0" left="16.0" right="16.0" top="12.0"/>
+                </padding>
+                <TextField fx:id="champMessage" onAction="#envoyerMessage" promptText="Écrivez un message..."
+                           styleClass="champ-message" HBox.hgrow="ALWAYS"/>
+                <Button fx:id="boutonEnvoyer" onAction="#envoyerMessage" styleClass="bouton-principal" text="Envoyer"/>
+            </HBox>
+        </VBox>
+    </center>
+
+</BorderPane>
+
