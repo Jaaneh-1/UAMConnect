@@ -47,7 +47,15 @@ public class RequeteReseau implements Serializable {
         FICHIER_LISTE_REPONSE,   // payload: List<Fichier>
 
         // --- Notifications temps réel ---
-        NOTIFICATION            // payload: String (ex: "Aminata vient de se connecter.")
+        NOTIFICATION,            // payload: String (ex: "Aminata vient de se connecter.")
+
+        // --- Gestion des utilisateurs (CRUD admin - section 4.2) ---
+        UTILISATEURS_TOUS_DEMANDE,   // payload: null
+        UTILISATEURS_TOUS_REPONSE,   // payload: List<User>
+        UTILISATEUR_CREER,           // payload: User (avec mot de passe en clair dans le champ password)
+        UTILISATEUR_MODIFIER,        // payload: User
+        UTILISATEUR_SUPPRIMER,       // payload: Integer (id)
+        UTILISATEUR_OPERATION_REPONSE // payload: String (message de résultat, succès ou erreur)
     }
 
     private Type type;
