@@ -9,6 +9,7 @@ import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.TextArea;
 import javafx.stage.FileChooser;
 import sn.uam.uamconnect.client.network.ClientTransfertFichier;
@@ -43,6 +44,15 @@ public class ChatController {
     @FXML private ListView<Annonce> listeAnnonces;
     @FXML private Button boutonJoindreFichier;
     @FXML private ListView<Fichier> listeFichiers;
+    @FXML private Tab ongletUtilisateurs;
+    @FXML private TextField champNouveauUsername;
+    @FXML private PasswordField champNouveauMotDePasse;
+    @FXML private TextField champNouveauNomComplet;
+    @FXML private TextField champNouveauEmail;
+    @FXML private ComboBox<User.Role> comboNouveauRole;
+    @FXML private Button boutonCreerUtilisateur;
+    @FXML private Label labelMessageUtilisateur;
+    @FXML private ListView<User> listeGestionUtilisateurs;
 
     private ClientReseau clientReseau;
     private User utilisateurConnecte;
@@ -55,11 +65,13 @@ public class ChatController {
     private final ObservableList<Annonce> donneesAnnonces = FXCollections.observableArrayList();
     private final ObservableList<Fichier> donneesFichiers = FXCollections.observableArrayList();
     private final ClientTransfertFichier clientTransfertFichier = new ClientTransfertFichier();
+    private final ObservableList<User> donneesGestionUtilisateurs = FXCollections.observableArrayList();
 
     /**
      * Appelée manuellement depuis ConnexionController juste après le chargement du FXML,
      * car clientReseau et utilisateurConnecte ne sont pas disponibles au moment de initialize().
      */
+    @FXML private TabPane ongletsPrincipaux;
     public void initialiserDonnees(ClientReseau clientReseau, User utilisateurConnecte) {
         this.clientReseau = clientReseau;
         this.utilisateurConnecte = utilisateurConnecte;
@@ -85,6 +97,13 @@ public class ChatController {
         configurerListeAnnonces();
         clientReseau.envoyer(new RequeteReseau(RequeteReseau.Type.LISTE_ANNONCES_DEMANDE,
                 null));
+        // L'onglet Utilisateurs n'est visible que pour l'Administrateur
+        if (utilisateurConnecte.getRole() != User.Role.ADMINISTRATEUR) {
+            ongletsPrincipaux.getTabs().remove(ongletUtilisateurs);
+        } else {
+            configurerListeGestionUtilisateurs();
+            clientReseau.envoyer(new RequeteReseau(RequeteReseau.Type.UTILISATEURS_TOUS_DEMANDE, null));
+        }
     }
 
     @FXML
@@ -94,6 +113,8 @@ public class ChatController {
         listeMessages.setItems(donneesMessages);
         listeAnnonces.setItems(donneesAnnonces);
         listeFichiers.setItems(donneesFichiers);
+        listeGestionUtilisateurs.setItems(donneesGestionUtilisateurs);
+        comboNouveauRole.getItems().setAll(User.Role.values());
     }
 
     /**
@@ -351,6 +372,25 @@ public class ChatController {
                 });
             }
 
+            case UTILISATEURS_TOUS_REPONSE -> {
+                @SuppressWarnings("unchecked")
+                List<User> tousLesUtilisateurs = (List<User>) requete.getPayload();
+                Platform.runLater(() -> donneesGestionUtilisateurs.setAll(tousLesUtilisateurs));
+            }
+
+            case UTILISATEUR_OPERATION_REPONSE -> {
+                String message = (String) requete.getPayload();
+                Platform.runLater(() -> {
+                    afficherMessageUtilisateur(message);
+                    champNouveauUsername.clear();
+                    champNouveauMotDePasse.clear();
+                    champNouveauNomComplet.clear();
+                    champNouveauEmail.clear();
+                    comboNouveauRole.setValue(null);
+                    annulerEdition();
+                });
+            }
+
             default -> { /* ignoré ici */ }
         }
     }
@@ -477,5 +517,112 @@ public class ChatController {
                 System.err.println("Erreur lors du téléchargement : " + e.getMessage());
             }
         }).start();
+    }
+
+    private void configurerListeGestionUtilisateurs() {
+        listeGestionUtilisateurs.setCellFactory(lv -> new ListCell<>() {
+            @Override
+            protected void updateItem(User user, boolean vide) {
+                super.updateItem(user, vide);
+
+                if (vide || user == null) {
+                    setGraphic(null);
+                    return;
+                }
+
+                Label nom = new Label(user.getNomComplet() + " (" + user.getUsername() + ")");
+                nom.getStyleClass().add("nom-utilisateur");
+
+                Label role = new Label(user.getRole().toString() + " • " + user.getEmail());
+                role.getStyleClass().add("role-utilisateur");
+
+                VBox infosTexte = new VBox(4, nom, role);
+
+                Button boutonModifier = new Button("Modifier");
+                boutonModifier.getStyleClass().add("bouton-secondaire-clair");
+                boutonModifier.setOnAction(e -> ouvrirModificationUtilisateur(user));
+
+                Button boutonSupprimer = new Button("Supprimer");
+                boutonSupprimer.getStyleClass().add("bouton-supprimer");
+                boutonSupprimer.setOnAction(e -> supprimerUtilisateur(user));
+
+                HBox boutonsActions = new HBox(8, boutonModifier, boutonSupprimer);
+                HBox ligne = new HBox(16, infosTexte, boutonsActions);
+
+                ligne.setAlignment(Pos.CENTER_LEFT);
+                HBox.setHgrow(infosTexte, javafx.scene.layout.Priority.ALWAYS);
+
+                VBox carte = new VBox(ligne);
+                carte.getStyleClass().add("carte-utilisateur");
+                VBox.setMargin(carte, new javafx.geometry.Insets(6, 12, 6, 12));
+
+                setGraphic(carte);
+            }
+        });
+    }
+
+    @FXML
+    private void creerUtilisateur() {
+        String username = champNouveauUsername.getText().trim();
+        String nomComplet = champNouveauNomComplet.getText().trim();
+        String email = champNouveauEmail.getText().trim();
+        User.Role role = comboNouveauRole.getValue();
+
+        if (username.isEmpty() || nomComplet.isEmpty() || role == null) {
+            afficherMessageUtilisateur("Veuillez remplir tous les champs obligatoires.");
+            return;
+        }
+
+        if (utilisateurEnCoursDedition != null) {
+            // Mode modification
+            utilisateurEnCoursDedition.setNomComplet(nomComplet);
+            utilisateurEnCoursDedition.setEmail(email);
+            utilisateurEnCoursDedition.setRole(role);
+
+            clientReseau.envoyer(new RequeteReseau(RequeteReseau.Type.UTILISATEUR_MODIFIER, utilisateurEnCoursDedition));
+            annulerEdition();
+
+        } else {
+            // Mode création
+            String motDePasse = champNouveauMotDePasse.getText();
+            if (motDePasse.isEmpty()) {
+                afficherMessageUtilisateur("Le mot de passe est obligatoire pour créer un compte.");
+                return;
+            }
+
+            User nouvelUtilisateur = new User(username, motDePasse, role, nomComplet, email);
+            clientReseau.envoyer(new RequeteReseau(RequeteReseau.Type.UTILISATEUR_CREER, nouvelUtilisateur));
+        }
+    }
+
+    private void supprimerUtilisateur(User user) {
+        clientReseau.envoyer(new RequeteReseau(RequeteReseau.Type.UTILISATEUR_SUPPRIMER, user.getId()));
+    }
+
+    private void afficherMessageUtilisateur(String message) {
+        labelMessageUtilisateur.setText(message);
+        labelMessageUtilisateur.setVisible(true);
+    }
+
+    private User utilisateurEnCoursDedition = null; // null = mode création, sinon mode modification
+
+    private void ouvrirModificationUtilisateur(User user) {
+        utilisateurEnCoursDedition = user;
+
+        champNouveauUsername.setText(user.getUsername());
+        champNouveauUsername.setDisable(true); // le username ne se change pas ici, plus simple et plus sûr
+        champNouveauMotDePasse.setPromptText("(laisser vide pour ne pas changer)");
+        champNouveauNomComplet.setText(user.getNomComplet());
+        champNouveauEmail.setText(user.getEmail());
+        comboNouveauRole.setValue(user.getRole());
+
+        boutonCreerUtilisateur.setText("Enregistrer les modifications");
+    }
+
+    private void annulerEdition() {
+        utilisateurEnCoursDedition = null;
+        champNouveauUsername.setDisable(false);
+        champNouveauMotDePasse.setPromptText("Mot de passe");
+        boutonCreerUtilisateur.setText("Créer l'utilisateur");
     }
 }

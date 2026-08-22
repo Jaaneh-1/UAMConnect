@@ -89,6 +89,10 @@ public class GestionnaireClient extends Thread {
             }
 
             case HISTORIQUE_PRIVE_DEMANDE -> traiterDemandeHistoriquePrive(requete);
+            case UTILISATEURS_TOUS_DEMANDE -> traiterListeUtilisateursTous();
+            case UTILISATEUR_CREER -> traiterCreationUtilisateur(requete);
+            case UTILISATEUR_MODIFIER -> traiterModificationUtilisateur(requete);
+            case UTILISATEUR_SUPPRIMER -> traiterSuppressionUtilisateur(requete);
 
             default -> System.out.println("[SERVEUR] Type de requête non géré : " + requete.getType());
         }
@@ -236,5 +240,91 @@ public class GestionnaireClient extends Thread {
                 utilisateurConnecte.getId(), autreUtilisateurId, 100
         );
         envoyer(new RequeteReseau(RequeteReseau.Type.HISTORIQUE_PRIVE_REPONSE, messages));
+    }
+
+    /**
+     * Vérifie que l'utilisateur connecté est bien Administrateur, sinon refuse.
+     * Sécurité appliquée côté serveur, jamais seulement côté client.
+     */
+    private boolean estAdministrateur() {
+        return utilisateurConnecte != null && utilisateurConnecte.getRole() == User.Role.ADMINISTRATEUR;
+    }
+
+    private void traiterListeUtilisateursTous() {
+        if (!estAdministrateur()) return;
+        envoyer(new RequeteReseau(RequeteReseau.Type.UTILISATEURS_TOUS_REPONSE, userDaoPourAdmin().trouverTous()));
+    }
+
+    private void traiterCreationUtilisateur(RequeteReseau requete) {
+        if (!estAdministrateur()) {
+            envoyer(new RequeteReseau(RequeteReseau.Type.UTILISATEUR_OPERATION_REPONSE, "Accès refusé."));
+            return;
+        }
+
+        User nouvelUtilisateur = (User) requete.getPayload();
+        var authService = new sn.uam.uamconnect.server.service.AuthService();
+
+        int id = authService.inscrire(
+                nouvelUtilisateur.getUsername(),
+                nouvelUtilisateur.getPassword(), // mot de passe en clair, sera haché par AuthService
+                nouvelUtilisateur.getRole(),
+                nouvelUtilisateur.getNomComplet(),
+                nouvelUtilisateur.getEmail()
+        );
+
+        String message = id != -1 ? "Utilisateur créé avec succès." : "Échec : nom d'utilisateur déjà pris.";
+        envoyer(new RequeteReseau(RequeteReseau.Type.UTILISATEUR_OPERATION_REPONSE, message));
+
+        if (id != -1) {
+            envoyer(new RequeteReseau(RequeteReseau.Type.UTILISATEURS_TOUS_REPONSE, userDaoPourAdmin().trouverTous()));
+        }
+    }
+
+    private void traiterModificationUtilisateur(RequeteReseau requete) {
+        if (!estAdministrateur()) {
+            envoyer(new RequeteReseau(RequeteReseau.Type.UTILISATEUR_OPERATION_REPONSE, "Accès refusé."));
+            return;
+        }
+
+        User utilisateurModifie = (User) requete.getPayload();
+        boolean succes = userDaoPourAdmin().modifier(utilisateurModifie);
+
+        envoyer(new RequeteReseau(RequeteReseau.Type.UTILISATEUR_OPERATION_REPONSE,
+                succes ? "Utilisateur modifié avec succès." : "Échec de la modification."));
+
+        if (succes) {
+            envoyer(new RequeteReseau(RequeteReseau.Type.UTILISATEURS_TOUS_REPONSE, userDaoPourAdmin().trouverTous()));
+        }
+    }
+
+    private void traiterSuppressionUtilisateur(RequeteReseau requete) {
+        if (!estAdministrateur()) {
+            envoyer(new RequeteReseau(RequeteReseau.Type.UTILISATEUR_OPERATION_REPONSE, "Accès refusé."));
+            return;
+        }
+
+        int idASupprimer = (Integer) requete.getPayload();
+
+        if (idASupprimer == utilisateurConnecte.getId()) {
+            envoyer(new RequeteReseau(RequeteReseau.Type.UTILISATEUR_OPERATION_REPONSE,
+                    "Impossible de supprimer votre propre compte."));
+            return;
+        }
+
+        boolean succes = userDaoPourAdmin().supprimer(idASupprimer);
+
+        envoyer(new RequeteReseau(RequeteReseau.Type.UTILISATEUR_OPERATION_REPONSE,
+                succes ? "Utilisateur supprimé avec succès." : "Échec de la suppression."));
+
+        if (succes) {
+            envoyer(new RequeteReseau(RequeteReseau.Type.UTILISATEURS_TOUS_REPONSE, userDaoPourAdmin().trouverTous()));
+        }
+    }
+
+    /**
+     * Petit raccourci pour accéder à un UserDAO (réutilise si possible, sinon en crée un).
+     */
+    private sn.uam.uamconnect.server.dao.UserDAO userDaoPourAdmin() {
+        return new sn.uam.uamconnect.server.dao.UserDAO();
     }
 }

@@ -11,6 +11,8 @@
 <?import javafx.scene.control.Tab?>
 <?import javafx.scene.control.TabPane?>
 <?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.PasswordField?>
 
 <BorderPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="sn.uam.uamconnect.client.controller.ChatController"
@@ -91,6 +93,31 @@
             <Tab text="📁 Fichiers">
                 <VBox styleClass="zone-annonces">
                     <ListView fx:id="listeFichiers" styleClass="liste-fichiers" VBox.vgrow="ALWAYS"/>
+                </VBox>
+            </Tab>
+
+            <Tab text="👤 Utilisateurs" fx:id="ongletUtilisateurs">
+                <VBox spacing="0" styleClass="zone-annonces">
+
+                    <VBox spacing="10.0" styleClass="formulaire-annonce">
+                        <padding>
+                            <Insets bottom="16.0" left="20.0" right="20.0" top="16.0"/>
+                        </padding>
+                        <Label styleClass="titre-section" text="Créer un utilisateur"/>
+                        <HBox spacing="10.0">
+                            <TextField fx:id="champNouveauUsername" promptText="Nom d'utilisateur" styleClass="champ-saisie" HBox.hgrow="ALWAYS"/>
+                            <PasswordField fx:id="champNouveauMotDePasse" promptText="Mot de passe" styleClass="champ-saisie" HBox.hgrow="ALWAYS"/>
+                        </HBox>
+                        <HBox spacing="10.0">
+                            <TextField fx:id="champNouveauNomComplet" promptText="Nom complet" styleClass="champ-saisie" HBox.hgrow="ALWAYS"/>
+                            <TextField fx:id="champNouveauEmail" promptText="Email" styleClass="champ-saisie" HBox.hgrow="ALWAYS"/>
+                        </HBox>
+                        <ComboBox fx:id="comboNouveauRole" promptText="Rôle" styleClass="champ-saisie" maxWidth="Infinity"/>
+                        <Button fx:id="boutonCreerUtilisateur" onAction="#creerUtilisateur" styleClass="bouton-principal" text="Créer l'utilisateur"/>
+                        <Label fx:id="labelMessageUtilisateur" styleClass="label-erreur" wrapText="true" visible="false"/>
+                    </VBox>
+
+                    <ListView fx:id="listeGestionUtilisateurs" styleClass="liste-utilisateurs" VBox.vgrow="ALWAYS"/>
                 </VBox>
             </Tab>
 
