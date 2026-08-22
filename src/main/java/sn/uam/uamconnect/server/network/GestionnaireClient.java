@@ -10,6 +10,8 @@ import sn.uam.uamconnect.common.Annonce;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.net.Socket;
 import java.util.Optional;
 
@@ -93,6 +95,8 @@ public class GestionnaireClient extends Thread {
             case UTILISATEUR_CREER -> traiterCreationUtilisateur(requete);
             case UTILISATEUR_MODIFIER -> traiterModificationUtilisateur(requete);
             case UTILISATEUR_SUPPRIMER -> traiterSuppressionUtilisateur(requete);
+            case FICHIER_SUPPRIMER -> traiterSuppressionFichier(requete);
+            case MESSAGE_SUPPRIMER -> traiterSuppressionMessage(requete);
 
             default -> System.out.println("[SERVEUR] Type de requête non géré : " + requete.getType());
         }
@@ -326,5 +330,63 @@ public class GestionnaireClient extends Thread {
      */
     private sn.uam.uamconnect.server.dao.UserDAO userDaoPourAdmin() {
         return new sn.uam.uamconnect.server.dao.UserDAO();
+    }
+
+    /**
+     * Supprime un fichier : vérifie que l'utilisateur est l'expéditeur ou un Administrateur,
+     * supprime la ligne en BDD ET le fichier physique sur le disque, puis diffuse la suppression.
+     */
+    private void traiterSuppressionFichier(RequeteReseau requete) {
+        int fichierId = (Integer) requete.getPayload();
+
+        var resultat = new sn.uam.uamconnect.server.dao.FichierDAO().trouverParId(fichierId);
+        if (resultat.isEmpty()) return;
+
+        var fichier = resultat.get();
+        boolean autorise = fichier.getExpediteurId() == utilisateurConnecte.getId()
+                || utilisateurConnecte.getRole() == User.Role.ADMINISTRATEUR;
+
+        if (!autorise) {
+            System.out.println("[SERVEUR] Suppression de fichier refusée pour " + utilisateurConnecte.getUsername());
+            return;
+        }
+
+        boolean succesBdd = new sn.uam.uamconnect.server.dao.FichierDAO().supprimer(fichierId);
+
+        if (succesBdd) {
+            try {
+                Files.deleteIfExists(Path.of(fichier.getChemin()));
+            } catch (java.io.IOException e) {
+                System.err.println("[SERVEUR] Impossible de supprimer le fichier physique : " + e.getMessage());
+            }
+
+            serveur.diffuserATous(new RequeteReseau(RequeteReseau.Type.FICHIER_SUPPRIME, fichierId));
+        }
+    }
+
+    /**
+     * Supprime un message : vérifie que l'utilisateur est l'auteur ou un Administrateur,
+     * supprime en BDD puis diffuse la suppression à tous.
+     */
+    private void traiterSuppressionMessage(RequeteReseau requete) {
+        int messageId = (Integer) requete.getPayload();
+
+        var resultat = messageDAO.trouverParId(messageId);
+        if (resultat.isEmpty()) return;
+
+        var message = resultat.get();
+        boolean autorise = message.getExpediteurId() == utilisateurConnecte.getId()
+                || utilisateurConnecte.getRole() == User.Role.ADMINISTRATEUR;
+
+        if (!autorise) {
+            System.out.println("[SERVEUR] Suppression de message refusée pour " + utilisateurConnecte.getUsername());
+            return;
+        }
+
+        boolean succes = messageDAO.supprimer(messageId);
+
+        if (succes) {
+            serveur.diffuserATous(new RequeteReseau(RequeteReseau.Type.MESSAGE_SUPPRIME, messageId));
+        }
     }
 }

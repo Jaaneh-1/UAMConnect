@@ -5,6 +5,7 @@ import sn.uam.uamconnect.common.Message;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * DAO responsable des opérations SQL sur la table "messages".
@@ -150,5 +151,45 @@ public class MessageDAO {
         }
 
         return message;
+    }
+
+    public Optional<Message> trouverParId(int id) {
+        String sql = """
+            SELECT m.*, u.username AS expediteur_username
+            FROM messages m
+            JOIN users u ON m.expediteur_id = u.id
+            WHERE m.id = ?
+            """;
+
+        try (Connection conn = ConnexionMySQL.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, id);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return Optional.of(mapperResultSetVersMessage(rs));
+                }
+            }
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Erreur lors de la recherche du message id=" + id, e);
+        }
+
+        return Optional.empty();
+    }
+
+    public boolean supprimer(int id) {
+        String sql = "DELETE FROM messages WHERE id = ?";
+
+        try (Connection conn = ConnexionMySQL.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, id);
+            return ps.executeUpdate() > 0;
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Erreur lors de la suppression du message id=" + id, e);
+        }
     }
 }

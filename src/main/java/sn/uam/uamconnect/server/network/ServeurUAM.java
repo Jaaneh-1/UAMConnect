@@ -154,4 +154,13 @@ public class ServeurUAM {
     public List<GestionnaireClient> getClientsConnectes() {
         return clientsConnectes;
     }
+
+    /**
+     * Diffuse n'importe quelle requête à tous les clients connectés (méthode générique).
+     */
+    public void diffuserATous(RequeteReseau requete) {
+        for (GestionnaireClient client : clientsConnectes) {
+            client.envoyer(requete);
+        }
+    }
 }
