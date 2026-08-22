@@ -88,6 +88,8 @@ public class GestionnaireClient extends Thread {
                         new sn.uam.uamconnect.server.dao.FichierDAO().trouverParSalon(salonId)));
             }
 
+            case HISTORIQUE_PRIVE_DEMANDE -> traiterDemandeHistoriquePrive(requete);
+
             default -> System.out.println("[SERVEUR] Type de requête non géré : " + requete.getType());
         }
     }
@@ -222,5 +224,17 @@ public class GestionnaireClient extends Thread {
         }
 
         serveur.diffuserNotification("Nouvelle annonce disponible : " + annonce.getTitre());
+    }
+
+    /**
+     * Envoie l'historique de la conversation privée entre l'utilisateur connecté
+     * et un autre utilisateur donné.
+     */
+    private void traiterDemandeHistoriquePrive(RequeteReseau requete) {
+        int autreUtilisateurId = (Integer) requete.getPayload();
+        var messages = messageDAO.trouverConversationPrivee(
+                utilisateurConnecte.getId(), autreUtilisateurId, 100
+        );
+        envoyer(new RequeteReseau(RequeteReseau.Type.HISTORIQUE_PRIVE_REPONSE, messages));
     }
 }

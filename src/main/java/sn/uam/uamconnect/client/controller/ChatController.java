@@ -19,6 +19,7 @@ import sn.uam.uamconnect.common.Message;
 import sn.uam.uamconnect.common.RequeteReseau;
 import sn.uam.uamconnect.common.Salon;
 import sn.uam.uamconnect.common.User;
+import sn.uam.uamconnect.client.view.NotificationToast;
 
 import java.util.List;
 import java.nio.file.Path;
@@ -46,6 +47,7 @@ public class ChatController {
     private ClientReseau clientReseau;
     private User utilisateurConnecte;
     private Salon salonActif;
+    private User destinataireActif; // null si on est dans un salon, sinon conversation privée avec cet utilisateur
 
     private final ObservableList<Salon> donneesSalons = FXCollections.observableArrayList();
     private final ObservableList<User> donneesUtilisateurs = FXCollections.observableArrayList();
@@ -122,6 +124,12 @@ public class ChatController {
             }
         });
 
+        listeUtilisateurs.getSelectionModel().selectedItemProperty().addListener((obs, ancien, nouveau) -> {
+            if (nouveau != null) {
+                ouvrirConversationPrivee(nouveau);
+            }
+        });
+
         // Affichage des messages en "bulles" façon messagerie
         listeMessages.setCellFactory(lv -> new ListCell<>() {
             @Override
@@ -192,11 +200,12 @@ public class ChatController {
         });
     }
 
-    /**
-     * Change de salon actif : met à jour l'affichage et demande l'historique au serveur.
-     */
+
     private void ouvrirSalon(Salon salon) {
         this.salonActif = salon;
+        this.destinataireActif = null; // on quitte le mode privé si on était dedans
+        listeUtilisateurs.getSelectionModel().clearSelection();
+
         labelSalonActif.setText("# " + salon.getNom());
         donneesMessages.clear();
 
@@ -206,19 +215,45 @@ public class ChatController {
     }
 
     /**
+     * Ouvre une conversation privée avec un utilisateur (clic dans la liste des connectés).
+     */
+    private void ouvrirConversationPrivee(User autreUtilisateur) {
+        if (autreUtilisateur.getId() == utilisateurConnecte.getId()) {
+            return; // on ne peut pas se parler à soi-même
+        }
+
+        this.destinataireActif = autreUtilisateur;
+        this.salonActif = null; // on quitte le mode salon
+        listeSalons.getSelectionModel().clearSelection();
+
+        labelSalonActif.setText("💬 " + autreUtilisateur.getUsername() + " (privé)");
+        donneesMessages.clear();
+
+        clientReseau.envoyer(new RequeteReseau(RequeteReseau.Type.HISTORIQUE_PRIVE_DEMANDE, autreUtilisateur.getId()));
+    }
+
+    /**
      * Envoie le message saisi dans le salon actuellement ouvert.
      */
     @FXML
     private void envoyerMessage() {
         String contenu = champMessage.getText().trim();
 
-        if (contenu.isEmpty() || salonActif == null) {
+        if (contenu.isEmpty()) {
             return;
         }
 
-        Message message = Message.creerMessageSalon(utilisateurConnecte.getId(), salonActif.getId(), contenu);
-        clientReseau.envoyer(new RequeteReseau(RequeteReseau.Type.MESSAGE_ENVOI, message));
+        Message message;
 
+        if (salonActif != null) {
+            message = Message.creerMessageSalon(utilisateurConnecte.getId(), salonActif.getId(), contenu);
+        } else if (destinataireActif != null) {
+            message = Message.creerMessagePrive(utilisateurConnecte.getId(), destinataireActif.getId(), contenu);
+        } else {
+            return; // aucune conversation active
+        }
+
+        clientReseau.envoyer(new RequeteReseau(RequeteReseau.Type.MESSAGE_ENVOI, message));
         champMessage.clear();
     }
 
@@ -252,19 +287,32 @@ public class ChatController {
             case MESSAGE_RECEPTION -> {
                 Message message = (Message) requete.getPayload();
                 Platform.runLater(() -> {
-                    // N'affiche que si le message concerne le salon actuellement ouvert
-                    if (salonActif != null && message.getSalonId() != null
-                            && message.getSalonId().equals(salonActif.getId())) {
+                    boolean concerneSalonActif = salonActif != null && message.getSalonId() != null
+                            && message.getSalonId().equals(salonActif.getId());
+
+                    boolean concerneConversationPrivee = destinataireActif != null && message.estMessagePrive()
+                            && (message.getExpediteurId() == destinataireActif.getId()
+                            || message.getDestinataireId() == destinataireActif.getId());
+
+                    if (concerneSalonActif || concerneConversationPrivee) {
                         donneesMessages.add(message);
                         listeMessages.scrollTo(donneesMessages.size() - 1);
+                    } else if (message.getExpediteurId() != utilisateurConnecte.getId()) {
+                        // Le message concerne une autre conversation que celle actuellement affichée :
+                        // on notifie l'utilisateur au lieu de l'ajouter silencieusement à la liste
+                        String texteNotif = message.estMessagePrive()
+                                ? "Nouveau message privé de " + message.getExpediteurUsername()
+                                : message.getExpediteurUsername() + " a écrit dans un autre salon.";
+                        NotificationToast.afficher(champMessage.getScene().getWindow(), texteNotif);
                     }
                 });
             }
 
             case NOTIFICATION -> {
                 String texte = (String) requete.getPayload();
-                System.out.println("[NOTIFICATION] " + texte);
-                // TODO étape notifications avancées : afficher une petite popup/toast
+                Platform.runLater(() -> {
+                    NotificationToast.afficher(champMessage.getScene().getWindow(), texte);
+                });
             }
 
             case LISTE_ANNONCES_REPONSE -> {
@@ -291,6 +339,15 @@ public class ChatController {
                             && fichier.getSalonId().equals(salonActif.getId())) {
                         donneesFichiers.add(0, fichier);
                     }
+                });
+            }
+
+            case HISTORIQUE_PRIVE_REPONSE -> {
+                @SuppressWarnings("unchecked")
+                List<Message> historique = (List<Message>) requete.getPayload();
+                Platform.runLater(() -> {
+                    donneesMessages.setAll(historique);
+                    listeMessages.scrollTo(donneesMessages.size() - 1);
                 });
             }
 
