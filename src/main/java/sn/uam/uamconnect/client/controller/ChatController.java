@@ -37,6 +37,8 @@ import javafx.scene.chart.CategoryAxis;
 import javafx.scene.chart.NumberAxis;
 import javafx.scene.chart.XYChart;
 import sn.uam.uamconnect.common.StatistiquesDTO;
+import sn.uam.uamconnect.client.service.PdfExportService;
+import javafx.stage.FileChooser;
 
 /**
  * Contrôleur de l'écran principal : salons, utilisateurs connectés, messagerie temps réel.
@@ -71,6 +73,12 @@ public class ChatController {
     @FXML private VBox conteneurDashboard;
 
     @FXML private StackPane conteneurAvatarPersonnel;
+
+    @FXML private Button boutonExporterSalon;
+    @FXML private Button boutonExporterAnnonces;
+
+    private final PdfExportService pdfExportService = new PdfExportService();
+    private StatistiquesDTO dernieresStatistiques; // gardées en mémoire pour l'export
 
     private final Path dossierCachePhotos = Path.of(System.getProperty("java.io.tmpdir"), "uamconnect_photos");
     private final Map<Integer, Image> cacheImagesMemoire = new HashMap<>();
@@ -284,6 +292,10 @@ public class ChatController {
     private void ouvrirSalon(Salon salon) {
         this.salonActif = salon;
         this.destinataireActif = null; // on quitte le mode privé si on était dedans
+
+        boutonExporterSalon.setVisible(true);
+        boutonExporterSalon.setManaged(true);
+
         listeUtilisateurs.getSelectionModel().clearSelection();
 
         labelSalonActif.setText("# " + salon.getNom());
@@ -796,6 +808,8 @@ public class ChatController {
      * Construit et affiche les 3 graphiques du dashboard à partir des statistiques reçues.
      */
     private void afficherDashboard(StatistiquesDTO stats) {
+        this.dernieresStatistiques = stats;
+
         conteneurDashboard.getChildren().clear();
 
         // ===== Graphique 1 : utilisateurs par rôle (camembert) =====
@@ -850,6 +864,68 @@ public class ChatController {
         VBox carte3 = new VBox(12, titre3, graphiqueFichiers);
         carte3.getStyleClass().add("carte-graphique");
 
-        conteneurDashboard.getChildren().addAll(carte1, carte2, carte3);
+        Button boutonExportStats = new Button("📄 Exporter les statistiques en PDF");
+        boutonExportStats.getStyleClass().add("bouton-principal");
+        boutonExportStats.setOnAction(e -> exporterStatistiquesPdf());
+
+        conteneurDashboard.getChildren().addAll(boutonExportStats, carte1, carte2, carte3);
+    }
+
+    @FXML
+    private void exporterSalonPdf() {
+        if (salonActif == null) return;
+
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Exporter l'historique en PDF");
+        fileChooser.setInitialFileName("historique_" + salonActif.getNom().replace(" ", "_") + ".pdf");
+        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Fichier PDF", "*.pdf"));
+
+        java.io.File destination = fileChooser.showSaveDialog(champMessage.getScene().getWindow());
+        if (destination == null) return;
+
+        try {
+            pdfExportService.exporterHistoriqueSalon(salonActif.getNom(), donneesMessages, destination);
+            NotificationToast.afficher(champMessage.getScene().getWindow(), "Export PDF réussi !");
+        } catch (java.io.IOException e) {
+            System.err.println("Erreur export PDF : " + e.getMessage());
+        }
+    }
+
+    @FXML
+    private void exporterAnnoncesPdf() {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Exporter les annonces en PDF");
+        fileChooser.setInitialFileName("annonces_uamconnect.pdf");
+        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Fichier PDF", "*.pdf"));
+
+        java.io.File destination = fileChooser.showSaveDialog(champMessage.getScene().getWindow());
+        if (destination == null) return;
+
+        try {
+            pdfExportService.exporterAnnonces(donneesAnnonces, destination);
+            NotificationToast.afficher(champMessage.getScene().getWindow(), "Export PDF réussi !");
+        } catch (java.io.IOException e) {
+            System.err.println("Erreur export PDF : " + e.getMessage());
+        }
+    }
+
+    private void exporterStatistiquesPdf() {
+        if (dernieresStatistiques == null) return;
+
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Exporter les statistiques en PDF");
+        fileChooser.setInitialFileName("statistiques_uamconnect.pdf");
+        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Fichier PDF", "*.pdf"));
+
+        java.io.File destination = fileChooser.showSaveDialog(champMessage.getScene().getWindow());
+        if (destination == null) return;
+
+        try {
+            List<javafx.scene.Node> graphiques = new java.util.ArrayList<>(conteneurDashboard.getChildren());
+            pdfExportService.exporterStatistiques(dernieresStatistiques, graphiques, destination);
+            NotificationToast.afficher(champMessage.getScene().getWindow(), "Export PDF réussi !");
+        } catch (java.io.IOException e) {
+            System.err.println("Erreur export PDF : " + e.getMessage());
+        }
     }
 }
