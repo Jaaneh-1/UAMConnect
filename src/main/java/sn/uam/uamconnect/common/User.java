@@ -23,6 +23,7 @@ public class User implements Serializable {
     private String email;
     private LocalDateTime dateCreation;
     private boolean estConnecte;
+    private String photoProfil; // chemin vers l'image, null si aucune photo choisie
 
     // Constructeur vide (utile pour certains frameworks / DAO)
     public User() {
@@ -48,6 +49,12 @@ public class User implements Serializable {
         this.email = email;
         this.dateCreation = dateCreation;
         this.estConnecte = estConnecte;
+    }
+
+    public User(int id, String username, String password, Role role, String nomComplet,
+                String email, String photoProfil, LocalDateTime dateCreation, boolean estConnecte) {
+        this(id, username, password, role, nomComplet, email, dateCreation, estConnecte);
+        this.photoProfil = photoProfil;
     }
 
     // ===== Getters & Setters =====
@@ -114,6 +121,14 @@ public class User implements Serializable {
 
     public void setEstConnecte(boolean estConnecte) {
         this.estConnecte = estConnecte;
+    }
+
+    public String getPhotoProfil() {
+        return photoProfil;
+    }
+
+    public void setPhotoProfil(String photoProfil) {
+        this.photoProfil = photoProfil;
     }
 
     @Override
