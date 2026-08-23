@@ -28,6 +28,8 @@
             </padding>
             <Label styleClass="titre-app-petit" text="UAM Connect"/>
             <Label fx:id="labelSalonActif" styleClass="label-salon-actif" text="Sélectionnez un salon"/>
+            <Button fx:id="boutonExporterSalon" onAction="#exporterSalonPdf" styleClass="bouton-secondaire"
+                    text="📄 Exporter PDF" visible="false" managed="false"/>
             <HBox HBox.hgrow="ALWAYS"/>
             <StackPane fx:id="conteneurAvatarPersonnel" onMouseClicked="#changerPhotoProfil" style="-fx-cursor: hand;"/>
             <Label fx:id="labelUtilisateurConnecte" styleClass="label-utilisateur"/>
@@ -88,6 +90,12 @@
                         <TextArea fx:id="champContenuAnnonce" promptText="Contenu de l'annonce..." styleClass="champ-saisie" prefRowCount="3" wrapText="true"/>
                         <Button fx:id="boutonPublierAnnonce" onAction="#publierAnnonce" styleClass="bouton-principal" text="Publier l'annonce"/>
                     </VBox>
+
+                    <Button fx:id="boutonExporterAnnonces" onAction="#exporterAnnoncesPdf" styleClass="bouton-secondaire-clair" text="📄 Exporter en PDF" style="-fx-margin: 10px;">
+                        <VBox.margin>
+                            <Insets left="20.0" top="10.0" bottom="10.0"/>
+                        </VBox.margin>
+                    </Button>
 
                     <ListView fx:id="listeAnnonces" styleClass="liste-annonces" VBox.vgrow="ALWAYS"/>
                 </VBox>
