@@ -15,7 +15,7 @@ import java.util.function.Consumer;
  */
 public class ClientReseau {
 
-    private static final String HOTE = "localhost"; // à remplacer par l'IP du serveur en réseau réel
+    private static final String HOTE = ConfigClient.getHoteServeur();
     private static final int PORT = 5000;
 
     private Socket socket;
