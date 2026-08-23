@@ -86,4 +86,72 @@ public class ClientTransfertFichier {
             }
         }
     }
+
+    /**
+     * Envoie une nouvelle photo de profil pour l'utilisateur connecté.
+     */
+    public void envoyerPhotoProfil(Path cheminPhoto, int userId) throws IOException {
+        long tailleOctets = Files.size(cheminPhoto);
+        String nomFichier = cheminPhoto.getFileName().toString();
+        String extension = nomFichier.contains(".")
+                ? nomFichier.substring(nomFichier.lastIndexOf('.') + 1)
+                : "png";
+
+        try (Socket socket = new Socket(HOTE, PORT_FICHIERS);
+             DataOutputStream sortie = new DataOutputStream(new BufferedOutputStream(socket.getOutputStream()));
+             InputStream fichierEntree = new BufferedInputStream(Files.newInputStream(cheminPhoto))) {
+
+            sortie.writeUTF("UPLOAD_PHOTO");
+            sortie.writeInt(userId);
+            sortie.writeUTF(extension);
+            sortie.writeLong(tailleOctets);
+
+            byte[] buffer = new byte[TAILLE_BUFFER];
+            int lus;
+            while ((lus = fichierEntree.read(buffer)) != -1) {
+                sortie.write(buffer, 0, lus);
+            }
+
+            sortie.flush();
+        }
+    }
+
+    /**
+     * Télécharge la photo de profil d'un utilisateur et la sauvegarde dans le cache local.
+     * Retourne le chemin local si réussi, null si l'utilisateur n'a pas de photo.
+     */
+    public Path telechargerPhotoProfil(int userId, Path dossierCache) throws IOException {
+        try (Socket socket = new Socket(HOTE, PORT_FICHIERS);
+             DataOutputStream sortie = new DataOutputStream(new BufferedOutputStream(socket.getOutputStream()));
+             DataInputStream entree = new DataInputStream(new BufferedInputStream(socket.getInputStream()))) {
+
+            sortie.writeUTF("DOWNLOAD_PHOTO");
+            sortie.writeInt(userId);
+            sortie.flush();
+
+            long taille = entree.readLong();
+
+            if (taille == -1) {
+                return null; // pas de photo pour cet utilisateur
+            }
+
+            Files.createDirectories(dossierCache);
+            Path destination = dossierCache.resolve("user_" + userId + ".png");
+
+            try (OutputStream fichierSortie = new BufferedOutputStream(Files.newOutputStream(destination))) {
+                byte[] buffer = new byte[TAILLE_BUFFER];
+                long octetsRestants = taille;
+
+                while (octetsRestants > 0) {
+                    int aLire = (int) Math.min(buffer.length, octetsRestants);
+                    int lus = entree.read(buffer, 0, aLire);
+                    if (lus == -1) break;
+                    fichierSortie.write(buffer, 0, lus);
+                    octetsRestants -= lus;
+                }
+            }
+
+            return destination;
+        }
+    }
 }

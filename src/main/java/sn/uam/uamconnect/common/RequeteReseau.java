@@ -62,6 +62,8 @@ public class RequeteReseau implements Serializable {
         FICHIER_SUPPRIME,   // payload: Integer (id du fichier) - diffusion pour retrait de l'affichage
         MESSAGE_SUPPRIMER,  // payload: Integer (id du message)
         MESSAGE_SUPPRIME,   // payload: Integer (id du message)
+
+        PHOTO_PROFIL_MISE_A_JOUR, // payload: User (avec le nouveau champ photoProfil) - diffusé à tous
     }
 
     private Type type;

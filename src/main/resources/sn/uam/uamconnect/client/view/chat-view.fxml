@@ -13,6 +13,7 @@
 <?import javafx.scene.control.TextArea?>
 <?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.PasswordField?>
+<?import javafx.scene.layout.StackPane?>
 
 <BorderPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="sn.uam.uamconnect.client.controller.ChatController"
@@ -27,6 +28,7 @@
             <Label styleClass="titre-app-petit" text="UAM Connect"/>
             <Label fx:id="labelSalonActif" styleClass="label-salon-actif" text="Sélectionnez un salon"/>
             <HBox HBox.hgrow="ALWAYS"/>
+            <StackPane fx:id="conteneurAvatarPersonnel" onMouseClicked="#changerPhotoProfil" style="-fx-cursor: hand;"/>
             <Label fx:id="labelUtilisateurConnecte" styleClass="label-utilisateur"/>
             <Button fx:id="boutonDeconnexion" onAction="#seDeconnecter" styleClass="bouton-secondaire" text="Déconnexion"/>
         </HBox>

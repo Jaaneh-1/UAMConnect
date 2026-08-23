@@ -24,6 +24,12 @@ import sn.uam.uamconnect.client.view.NotificationToast;
 
 import java.util.List;
 import java.nio.file.Path;
+import javafx.scene.layout.StackPane;
+import javafx.scene.image.Image;
+import sn.uam.uamconnect.client.view.AvatarUtil;
+import java.util.HashMap;
+import java.util.Map;
+import java.io.IOException;
 
 /**
  * Contrôleur de l'écran principal : salons, utilisateurs connectés, messagerie temps réel.
@@ -53,6 +59,11 @@ public class ChatController {
     @FXML private Button boutonCreerUtilisateur;
     @FXML private Label labelMessageUtilisateur;
     @FXML private ListView<User> listeGestionUtilisateurs;
+
+    @FXML private StackPane conteneurAvatarPersonnel;
+
+    private final Path dossierCachePhotos = Path.of(System.getProperty("java.io.tmpdir"), "uamconnect_photos");
+    private final Map<Integer, Image> cacheImagesMemoire = new HashMap<>();
 
     private ClientReseau clientReseau;
     private User utilisateurConnecte;
@@ -104,6 +115,8 @@ public class ChatController {
             configurerListeGestionUtilisateurs();
             clientReseau.envoyer(new RequeteReseau(RequeteReseau.Type.UTILISATEURS_TOUS_DEMANDE, null));
         }
+
+        afficherAvatar(conteneurAvatarPersonnel, utilisateurConnecte, 36);
     }
 
     @FXML
@@ -136,12 +149,28 @@ public class ChatController {
             }
         });
 
-        // Affichage des utilisateurs connectés avec un petit point vert
+
         listeUtilisateurs.setCellFactory(lv -> new ListCell<>() {
             @Override
             protected void updateItem(User user, boolean vide) {
                 super.updateItem(user, vide);
-                setText(vide || user == null ? null : "🟢 " + user.getUsername());
+
+                if (vide || user == null) {
+                    setGraphic(null);
+                    setText(null);
+                    return;
+                }
+
+                StackPane avatar = new StackPane();
+                afficherAvatar(avatar, user, 24);
+
+                Label nom = new Label(user.getUsername());
+
+                HBox ligne = new HBox(8, avatar, nom);
+                ligne.setAlignment(Pos.CENTER_LEFT);
+
+                setGraphic(ligne);
+                setText(null);
             }
         });
 
@@ -414,6 +443,28 @@ public class ChatController {
                 Platform.runLater(() -> donneesMessages.removeIf(m -> m.getId() == idSupprime));
             }
 
+            case PHOTO_PROFIL_MISE_A_JOUR -> {
+                User userMisAJour = (User) requete.getPayload();
+                cacheImagesMemoire.remove(userMisAJour.getId()); // invalide le cache pour forcer le rechargement
+
+                Platform.runLater(() -> {
+                    // Met à jour l'objet User correspondant dans la liste des utilisateurs connectés
+                    // (sinon la liste garde l'ancienne version sans photo, même après refresh())
+                    for (int i = 0; i < donneesUtilisateurs.size(); i++) {
+                        if (donneesUtilisateurs.get(i).getId() == userMisAJour.getId()) {
+                            donneesUtilisateurs.set(i, userMisAJour);
+                            break;
+                        }
+                    }
+
+                    if (userMisAJour.getId() == utilisateurConnecte.getId()) {
+                        afficherAvatar(conteneurAvatarPersonnel, userMisAJour, 36);
+                    }
+
+                    listeUtilisateurs.refresh();
+                });
+            }
+
             default -> { /* ignoré ici */ }
         }
     }
@@ -658,5 +709,64 @@ public class ChatController {
         champNouveauUsername.setDisable(false);
         champNouveauMotDePasse.setPromptText("Mot de passe");
         boutonCreerUtilisateur.setText("Créer l'utilisateur");
+    }
+
+    /**
+     * Affiche l'avatar d'un utilisateur dans le conteneur donné : sa photo si elle est
+     * disponible en cache, sinon un avatar généré à partir de son initiale, avec
+     * téléchargement en arrière-plan si une photo existe côté serveur mais pas encore en cache.
+     */
+    private void afficherAvatar(StackPane conteneur, User user, double taille) {
+        conteneur.getChildren().clear();
+
+        if (cacheImagesMemoire.containsKey(user.getId())) {
+            conteneur.getChildren().add(AvatarUtil.creerAvatarImage(cacheImagesMemoire.get(user.getId()), taille));
+            return;
+        }
+
+        // Par défaut : avatar avec initiale, en attendant un éventuel téléchargement
+        conteneur.getChildren().add(AvatarUtil.creerAvatarInitiale(user.getNomComplet(), taille));
+
+        if (user.getPhotoProfil() != null) {
+            new Thread(() -> {
+                try {
+                    Path chemin = clientTransfertFichier.telechargerPhotoProfil(user.getId(), dossierCachePhotos);
+                    if (chemin != null) {
+                        Image image = new Image(chemin.toUri().toString());
+                        cacheImagesMemoire.put(user.getId(), image);
+                        Platform.runLater(() -> {
+                            conteneur.getChildren().clear();
+                            conteneur.getChildren().add(AvatarUtil.creerAvatarImage(image, taille));
+                        });
+                    }
+                } catch (IOException e) {
+                    System.err.println("Erreur téléchargement photo profil : " + e.getMessage());
+                }
+            }).start();
+        }
+    }
+
+    /**
+     * Ouvre un sélecteur d'image pour changer sa propre photo de profil.
+     */
+    @FXML
+    private void changerPhotoProfil() {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Choisir une photo de profil");
+        fileChooser.getExtensionFilters().add(
+                new FileChooser.ExtensionFilter("Images", "*.png", "*.jpg", "*.jpeg")
+        );
+
+        java.io.File fichierChoisi = fileChooser.showOpenDialog(champMessage.getScene().getWindow());
+        if (fichierChoisi == null) return;
+
+        new Thread(() -> {
+            try {
+                clientTransfertFichier.envoyerPhotoProfil(fichierChoisi.toPath(), utilisateurConnecte.getId());
+                cacheImagesMemoire.remove(utilisateurConnecte.getId()); // force le rechargement
+            } catch (IOException e) {
+                System.err.println("Erreur envoi photo profil : " + e.getMessage());
+            }
+        }).start();
     }
 }

@@ -36,12 +36,13 @@ public class GestionnaireTransfertFichier extends Thread {
         try (DataInputStream entree = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
              DataOutputStream sortie = new DataOutputStream(new BufferedOutputStream(socket.getOutputStream()))) {
 
-            String action = entree.readUTF(); // "UPLOAD" ou "DOWNLOAD"
+            String action = entree.readUTF(); // "UPLOAD", "DOWNLOAD", "UPLOAD_PHOTO" ou "DOWNLOAD_PHOTO"
 
-            if ("UPLOAD".equals(action)) {
-                traiterUpload(entree);
-            } else if ("DOWNLOAD".equals(action)) {
-                traiterDownload(entree, sortie);
+            switch (action) {
+                case "UPLOAD" -> traiterUpload(entree);
+                case "DOWNLOAD" -> traiterDownload(entree, sortie);
+                case "UPLOAD_PHOTO" -> traiterUploadPhoto(entree);
+                case "DOWNLOAD_PHOTO" -> traiterDownloadPhoto(entree, sortie);
             }
 
         } catch (IOException e) {
@@ -151,5 +152,81 @@ public class GestionnaireTransfertFichier extends Thread {
 
         sortie.flush();
         System.out.println("[TRANSFERT] Fichier envoyé : " + fichier.getNomFichier());
+    }
+
+    private static final String DOSSIER_PHOTOS = "photos_profil";
+
+    /**
+     * Réceptionne une photo de profil, la stocke (un seul fichier par utilisateur,
+     * écrasé à chaque changement), met à jour la BDD, puis diffuse le changement à tous.
+     */
+    private void traiterUploadPhoto(DataInputStream entree) throws IOException {
+        int userId = entree.readInt();
+        String extension = entree.readUTF(); // ex: "png", "jpg"
+        long tailleOctets = entree.readLong();
+
+        Files.createDirectories(Path.of(DOSSIER_PHOTOS));
+
+        String nomFichier = "user_" + userId + "." + extension;
+        Path cheminDisque = Path.of(DOSSIER_PHOTOS, nomFichier);
+
+        try (OutputStream fichierSortie = new BufferedOutputStream(Files.newOutputStream(cheminDisque))) {
+            byte[] buffer = new byte[TAILLE_BUFFER];
+            long octetsRestants = tailleOctets;
+
+            while (octetsRestants > 0) {
+                int aLire = (int) Math.min(buffer.length, octetsRestants);
+                int lus = entree.read(buffer, 0, aLire);
+                if (lus == -1) break;
+                fichierSortie.write(buffer, 0, lus);
+                octetsRestants -= lus;
+            }
+        }
+
+        var userDAO = new sn.uam.uamconnect.server.dao.UserDAO();
+        userDAO.mettreAJourPhotoProfil(userId, nomFichier);
+
+        // Diffuse l'utilisateur mis à jour à tous les clients, pour rafraîchir l'affichage partout
+        userDAO.trouverParId(userId).ifPresent(user -> {
+            RequeteReseau notification = new RequeteReseau(RequeteReseau.Type.PHOTO_PROFIL_MISE_A_JOUR, user);
+            serveur.diffuserATous(notification);
+        });
+
+        System.out.println("[TRANSFERT] Photo de profil mise à jour pour l'utilisateur id=" + userId);
+    }
+
+    /**
+     * Envoie la photo de profil d'un utilisateur donné (par son id) au client qui la demande.
+     */
+    private void traiterDownloadPhoto(DataInputStream entree, DataOutputStream sortie) throws IOException {
+        int userId = entree.readInt();
+
+        var userDAO = new sn.uam.uamconnect.server.dao.UserDAO();
+        var resultat = userDAO.trouverParId(userId);
+
+        if (resultat.isEmpty() || resultat.get().getPhotoProfil() == null) {
+            sortie.writeLong(-1);
+            return;
+        }
+
+        Path cheminDisque = Path.of(DOSSIER_PHOTOS, resultat.get().getPhotoProfil());
+
+        if (!Files.exists(cheminDisque)) {
+            sortie.writeLong(-1);
+            return;
+        }
+
+        long taille = Files.size(cheminDisque);
+        sortie.writeLong(taille);
+
+        try (InputStream fichierEntree = new BufferedInputStream(Files.newInputStream(cheminDisque))) {
+            byte[] buffer = new byte[TAILLE_BUFFER];
+            int lus;
+            while ((lus = fichierEntree.read(buffer)) != -1) {
+                sortie.write(buffer, 0, lus);
+            }
+        }
+
+        sortie.flush();
     }
 }

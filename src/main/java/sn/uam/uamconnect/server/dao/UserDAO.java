@@ -217,6 +217,23 @@ public class UserDAO {
 
         user.setEstConnecte(rs.getBoolean("est_connecte"));
 
+        user.setPhotoProfil(rs.getString("photo_profil"));
+
         return user;
+    }
+
+    public boolean mettreAJourPhotoProfil(int userId, String cheminPhoto) {
+        String sql = "UPDATE users SET photo_profil = ? WHERE id = ?";
+
+        try (Connection conn = ConnexionMySQL.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setString(1, cheminPhoto);
+            ps.setInt(2, userId);
+            return ps.executeUpdate() > 0;
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Erreur lors de la mise à jour de la photo de profil id=" + userId, e);
+        }
     }
 }
