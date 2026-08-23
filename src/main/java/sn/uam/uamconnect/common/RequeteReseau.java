@@ -64,6 +64,9 @@ public class RequeteReseau implements Serializable {
         MESSAGE_SUPPRIME,   // payload: Integer (id du message)
 
         PHOTO_PROFIL_MISE_A_JOUR, // payload: User (avec le nouveau champ photoProfil) - diffusé à tous
+        // --- Dashboard (bonus) ---
+        STATISTIQUES_DEMANDE, // payload: null
+        STATISTIQUES_REPONSE, // payload: StatistiquesDTO
     }
 
     private Type type;

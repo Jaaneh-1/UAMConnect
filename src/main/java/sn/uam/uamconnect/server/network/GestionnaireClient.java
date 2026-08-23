@@ -97,6 +97,7 @@ public class GestionnaireClient extends Thread {
             case UTILISATEUR_SUPPRIMER -> traiterSuppressionUtilisateur(requete);
             case FICHIER_SUPPRIMER -> traiterSuppressionFichier(requete);
             case MESSAGE_SUPPRIMER -> traiterSuppressionMessage(requete);
+            case STATISTIQUES_DEMANDE -> traiterDemandeStatistiques();
 
             default -> System.out.println("[SERVEUR] Type de requête non géré : " + requete.getType());
         }
@@ -388,5 +389,22 @@ public class GestionnaireClient extends Thread {
         if (succes) {
             serveur.diffuserATous(new RequeteReseau(RequeteReseau.Type.MESSAGE_SUPPRIME, messageId));
         }
+    }
+
+    /**
+     * Fournit les statistiques du dashboard. Réservé à Administrateur et Enseignant.
+     */
+    private void traiterDemandeStatistiques() {
+        if (utilisateurConnecte.getRole() == User.Role.ETUDIANT) {
+            return; // accès refusé silencieusement, pas de dashboard pour les étudiants
+        }
+
+        var stats = new sn.uam.uamconnect.common.StatistiquesDTO(
+                new sn.uam.uamconnect.server.dao.UserDAO().compterParRole(),
+                messageDAO.compterParSalon(),
+                new sn.uam.uamconnect.server.dao.FichierDAO().compterParSalon()
+        );
+
+        envoyer(new RequeteReseau(RequeteReseau.Type.STATISTIQUES_REPONSE, stats));
     }
 }

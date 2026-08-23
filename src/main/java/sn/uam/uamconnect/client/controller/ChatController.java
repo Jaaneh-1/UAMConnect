@@ -31,6 +31,13 @@ import java.util.HashMap;
 import java.util.Map;
 import java.io.IOException;
 
+import javafx.scene.chart.PieChart;
+import javafx.scene.chart.BarChart;
+import javafx.scene.chart.CategoryAxis;
+import javafx.scene.chart.NumberAxis;
+import javafx.scene.chart.XYChart;
+import sn.uam.uamconnect.common.StatistiquesDTO;
+
 /**
  * Contrôleur de l'écran principal : salons, utilisateurs connectés, messagerie temps réel.
  */
@@ -59,6 +66,9 @@ public class ChatController {
     @FXML private Button boutonCreerUtilisateur;
     @FXML private Label labelMessageUtilisateur;
     @FXML private ListView<User> listeGestionUtilisateurs;
+
+    @FXML private Tab ongletDashboard;
+    @FXML private VBox conteneurDashboard;
 
     @FXML private StackPane conteneurAvatarPersonnel;
 
@@ -117,6 +127,13 @@ public class ChatController {
         }
 
         afficherAvatar(conteneurAvatarPersonnel, utilisateurConnecte, 36);
+
+        // Le dashboard n'est visible que pour Administrateur et Enseignant (pas Étudiant)
+        if (utilisateurConnecte.getRole() == User.Role.ETUDIANT) {
+            ongletsPrincipaux.getTabs().remove(ongletDashboard);
+        } else {
+            clientReseau.envoyer(new RequeteReseau(RequeteReseau.Type.STATISTIQUES_DEMANDE, null));
+        }
     }
 
     @FXML
@@ -465,6 +482,11 @@ public class ChatController {
                 });
             }
 
+            case STATISTIQUES_REPONSE -> {
+                StatistiquesDTO stats = (StatistiquesDTO) requete.getPayload();
+                Platform.runLater(() -> afficherDashboard(stats));
+            }
+
             default -> { /* ignoré ici */ }
         }
     }
@@ -768,5 +790,66 @@ public class ChatController {
                 System.err.println("Erreur envoi photo profil : " + e.getMessage());
             }
         }).start();
+    }
+
+    /**
+     * Construit et affiche les 3 graphiques du dashboard à partir des statistiques reçues.
+     */
+    private void afficherDashboard(StatistiquesDTO stats) {
+        conteneurDashboard.getChildren().clear();
+
+        // ===== Graphique 1 : utilisateurs par rôle (camembert) =====
+        Label titre1 = new Label("Répartition des utilisateurs par rôle");
+        titre1.getStyleClass().add("titre-graphique");
+
+        PieChart camembert = new PieChart();
+        stats.getUtilisateursParRole().forEach((role, total) ->
+                camembert.getData().add(new PieChart.Data(role + " (" + total + ")", total))
+        );
+        camembert.setLegendVisible(true);
+        camembert.setPrefHeight(300);
+
+        VBox carte1 = new VBox(12, titre1, camembert);
+        carte1.getStyleClass().add("carte-graphique");
+
+        // ===== Graphique 2 : messages par salon (barres) =====
+        Label titre2 = new Label("Messages envoyés par salon");
+        titre2.getStyleClass().add("titre-graphique");
+
+        CategoryAxis axeXMessages = new CategoryAxis();
+        NumberAxis axeYMessages = new NumberAxis();
+        BarChart<String, Number> graphiqueMessages = new BarChart<>(axeXMessages, axeYMessages);
+        graphiqueMessages.setLegendVisible(false);
+        graphiqueMessages.setPrefHeight(300);
+
+        XYChart.Series<String, Number> serieMessages = new XYChart.Series<>();
+        stats.getMessagesParSalon().forEach((salon, total) ->
+                serieMessages.getData().add(new XYChart.Data<>(salon, total))
+        );
+        graphiqueMessages.getData().add(serieMessages);
+
+        VBox carte2 = new VBox(12, titre2, graphiqueMessages);
+        carte2.getStyleClass().add("carte-graphique");
+
+        // ===== Graphique 3 : fichiers par salon (barres) =====
+        Label titre3 = new Label("Fichiers partagés par salon");
+        titre3.getStyleClass().add("titre-graphique");
+
+        CategoryAxis axeXFichiers = new CategoryAxis();
+        NumberAxis axeYFichiers = new NumberAxis();
+        BarChart<String, Number> graphiqueFichiers = new BarChart<>(axeXFichiers, axeYFichiers);
+        graphiqueFichiers.setLegendVisible(false);
+        graphiqueFichiers.setPrefHeight(300);
+
+        XYChart.Series<String, Number> serieFichiers = new XYChart.Series<>();
+        stats.getFichiersParSalon().forEach((salon, total) ->
+                serieFichiers.getData().add(new XYChart.Data<>(salon, total))
+        );
+        graphiqueFichiers.getData().add(serieFichiers);
+
+        VBox carte3 = new VBox(12, titre3, graphiqueFichiers);
+        carte3.getStyleClass().add("carte-graphique");
+
+        conteneurDashboard.getChildren().addAll(carte1, carte2, carte3);
     }
 }

@@ -377,3 +377,18 @@
 .bouton-supprimer-mini:hover {
     -fx-text-fill: #e53e3e;
 }
+
+/* ===== Dashboard ===== */
+
+.carte-graphique {
+    -fx-background-color: white;
+    -fx-background-radius: 12px;
+    -fx-padding: 20px;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 8, 0, 0, 3);
+}
+
+.titre-graphique {
+    -fx-text-fill: #1e3a5f;
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+}

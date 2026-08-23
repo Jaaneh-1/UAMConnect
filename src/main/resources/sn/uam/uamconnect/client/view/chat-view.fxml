@@ -14,6 +14,7 @@
 <?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.PasswordField?>
 <?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.control.ScrollPane?>
 
 <BorderPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="sn.uam.uamconnect.client.controller.ChatController"
@@ -121,6 +122,16 @@
 
                     <ListView fx:id="listeGestionUtilisateurs" styleClass="liste-utilisateurs" VBox.vgrow="ALWAYS"/>
                 </VBox>
+            </Tab>
+
+            <Tab text="📊 Dashboard" fx:id="ongletDashboard">
+                <ScrollPane fitToWidth="true" styleClass="zone-annonces">
+                    <VBox fx:id="conteneurDashboard" spacing="20.0">
+                        <padding>
+                            <Insets bottom="24.0" left="24.0" right="24.0" top="24.0"/>
+                        </padding>
+                    </VBox>
+                </ScrollPane>
             </Tab>
 
         </TabPane>
