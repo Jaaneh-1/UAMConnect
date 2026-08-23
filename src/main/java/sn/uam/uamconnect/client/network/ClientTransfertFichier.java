@@ -12,7 +12,7 @@ import java.nio.file.Path;
  */
 public class ClientTransfertFichier {
 
-    private static final String HOTE = "localhost";
+    private static final String HOTE = ConfigClient.getHoteServeur();
     private static final int PORT_FICHIERS = 5001;
     private static final int TAILLE_BUFFER = 8192;
 
