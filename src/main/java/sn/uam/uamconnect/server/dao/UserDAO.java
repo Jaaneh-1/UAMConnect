@@ -8,6 +8,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import java.util.Map;
+import java.util.LinkedHashMap;
+
 /**
  * DAO responsable de toutes les opérations SQL sur la table "users".
  * Utilise exclusivement des PreparedStatement (exigence du sujet, section 7).
@@ -235,5 +238,24 @@ public class UserDAO {
         } catch (SQLException e) {
             throw new RuntimeException("Erreur lors de la mise à jour de la photo de profil id=" + userId, e);
         }
+    }
+
+    public Map<String, Integer> compterParRole() {
+        String sql = "SELECT role, COUNT(*) AS total FROM users GROUP BY role";
+        Map<String, Integer> resultat = new LinkedHashMap<>();
+
+        try (Connection conn = ConnexionMySQL.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+
+            while (rs.next()) {
+                resultat.put(rs.getString("role"), rs.getInt("total"));
+            }
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Erreur lors du comptage des utilisateurs par rôle", e);
+        }
+
+        return resultat;
     }
 }

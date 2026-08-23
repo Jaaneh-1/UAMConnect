@@ -6,6 +6,8 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
  * DAO responsable des opérations SQL sur la table "messages".
@@ -191,5 +193,31 @@ public class MessageDAO {
         } catch (SQLException e) {
             throw new RuntimeException("Erreur lors de la suppression du message id=" + id, e);
         }
+    }
+
+    public Map<String, Integer> compterParSalon() {
+        String sql = """
+            SELECT s.nom, COUNT(m.id) AS total
+            FROM salons s
+            LEFT JOIN messages m ON m.salon_id = s.id
+            GROUP BY s.id, s.nom
+            ORDER BY s.nom
+            """;
+
+        Map<String, Integer> resultat = new LinkedHashMap<>();
+
+        try (Connection conn = ConnexionMySQL.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+
+            while (rs.next()) {
+                resultat.put(rs.getString("nom"), rs.getInt("total"));
+            }
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Erreur lors du comptage des messages par salon", e);
+        }
+
+        return resultat;
     }
 }
