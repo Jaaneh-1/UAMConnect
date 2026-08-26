@@ -9,7 +9,7 @@ import javafx.scene.control.TextField;
 import sn.uam.uamconnect.client.network.ClientReseau;
 import sn.uam.uamconnect.common.RequeteReseau;
 import sn.uam.uamconnect.common.User;
-
+import sn.uam.uamconnect.client.network.ConfigClient;
 import java.io.IOException;
 
 /**
@@ -17,6 +17,9 @@ import java.io.IOException;
  * Relie l'interface FXML (connexion-view.fxml) à la logique réseau (ClientReseau).
  */
 public class ConnexionController {
+
+    @FXML
+    private TextField champAdresseServeur;
 
     @FXML
     private TextField champUsername;
@@ -38,14 +41,7 @@ public class ConnexionController {
      */
     @FXML
     public void initialize() {
-        clientReseau = new ClientReseau();
-
-        try {
-            clientReseau.connecter();
-        } catch (IOException e) {
-            afficherErreur("Impossible de joindre le serveur. Vérifiez qu'il est démarré.");
-            boutonConnexion.setDisable(true);
-        }
+        champAdresseServeur.setText(ConfigClient.getHoteServeur());
     }
 
     /**
@@ -53,18 +49,31 @@ public class ConnexionController {
      */
     @FXML
     private void seConnecter() {
+        String adresseServeur = champAdresseServeur.getText().trim();
         String username = champUsername.getText().trim();
         String motDePasse = champMotDePasse.getText();
 
-        if (username.isEmpty() || motDePasse.isEmpty()) {
+        if (adresseServeur.isEmpty() || username.isEmpty() || motDePasse.isEmpty()) {
             afficherErreur("Veuillez remplir tous les champs.");
             return;
         }
 
+        // Mémorise cette adresse pour les prochaines connexions
+        ConfigClient.sauvegarderHoteServeur(adresseServeur);
+
         boutonConnexion.setDisable(true);
         labelErreur.setVisible(false);
 
-        // On écoute la réponse du serveur AVANT d'envoyer la demande
+        clientReseau = new ClientReseau();
+
+        try {
+            clientReseau.connecter();
+        } catch (IOException e) {
+            afficherErreur("Impossible de joindre le serveur à l'adresse : " + adresseServeur);
+            boutonConnexion.setDisable(false);
+            return;
+        }
+
         clientReseau.setEcouteurMessages(this::traiterReponseServeur);
 
         RequeteReseau requete = new RequeteReseau(
