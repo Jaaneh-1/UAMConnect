@@ -44,4 +44,22 @@ public class ConfigClient {
         }
         return hoteServeur;
     }
+
+    /**
+     * Enregistre une nouvelle adresse de serveur dans le fichier externe,
+     * pour qu'elle soit mémorisée au prochain lancement de l'application.
+     */
+    public static void sauvegarderHoteServeur(String nouvelleAdresse) {
+        hoteServeur = nouvelleAdresse; // mise à jour immédiate en mémoire
+
+        java.io.File fichierExterne = new java.io.File("client.properties");
+
+        try (java.io.FileOutputStream sortie = new java.io.FileOutputStream(fichierExterne)) {
+            Properties proprietes = new Properties();
+            proprietes.setProperty("serveur.hote", nouvelleAdresse);
+            proprietes.store(sortie, "Configuration UAM Connect - généré automatiquement");
+        } catch (IOException e) {
+            System.err.println("Impossible d'enregistrer l'adresse du serveur : " + e.getMessage());
+        }
+    }
 }

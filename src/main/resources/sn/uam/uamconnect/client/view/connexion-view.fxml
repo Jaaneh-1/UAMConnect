@@ -29,6 +29,10 @@
             <Insets bottom="30.0" left="30.0" right="30.0" top="30.0"/>
         </padding>
 
+        <Label styleClass="label-champ" text="Adresse du serveur"/>
+        <TextField fx:id="champAdresseServeur" promptText="ex: localhost ou 192.168.1.11" styleClass="champ-saisie"/>
+
+
         <Label styleClass="label-champ" text="Nom d'utilisateur"/>
         <TextField fx:id="champUsername" promptText="Entrez votre identifiant" styleClass="champ-saisie"/>
 
