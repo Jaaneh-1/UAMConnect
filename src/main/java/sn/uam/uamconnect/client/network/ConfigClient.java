@@ -16,16 +16,28 @@ public class ConfigClient {
     public static String getHoteServeur() {
         if (hoteServeur == null) {
             Properties proprietes = new Properties();
-            try (InputStream input = ConfigClient.class.getClassLoader()
-                    .getResourceAsStream("client.properties")) {
 
-                if (input != null) {
-                    proprietes.load(input);
-                    hoteServeur = proprietes.getProperty("serveur.hote", "localhost");
+            // 1. Cherche d'abord un fichier externe, à côté de l'exécutable (modifiable sans recompiler)
+            java.io.File fichierExterne = new java.io.File("client.properties");
+
+            try {
+                if (fichierExterne.exists()) {
+                    try (java.io.FileInputStream input = new java.io.FileInputStream(fichierExterne)) {
+                        proprietes.load(input);
+                        hoteServeur = proprietes.getProperty("serveur.hote", "localhost");
+                    }
                 } else {
-                    hoteServeur = "localhost";
+                    // 2. Sinon, utilise celui embarqué dans le JAR (valeur par défaut)
+                    try (InputStream input = ConfigClient.class.getClassLoader()
+                            .getResourceAsStream("client.properties")) {
+                        if (input != null) {
+                            proprietes.load(input);
+                            hoteServeur = proprietes.getProperty("serveur.hote", "localhost");
+                        } else {
+                            hoteServeur = "localhost";
+                        }
+                    }
                 }
-
             } catch (IOException e) {
                 hoteServeur = "localhost";
             }
