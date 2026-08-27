@@ -43,3 +43,6 @@ src/main/resources/db.properties
 fichiers_serveur/
 
 photos_profil/
+
+hs_err_pid*.log
+replay_pid*.log
